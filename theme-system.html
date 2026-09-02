@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme System — دليل أي خدمة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Cairo', sans-serif; transition: all 0.4s ease; }
+
+/* ====== THEMES ====== */
+/* Default = Dark + Blue/Purple */
+:root {
+  --bg:         #0f0f1a;
+  --surface:    #16162a;
+  --surface2:   #1e1e35;
+  --border:     rgba(255,255,255,0.08);
+  --text:       #f1f1f1;
+  --text-muted: #94a3b8;
+  --shadow:     rgba(0,0,0,0.4);
+  --mode: dark;
+
+  /* Accent = Blue/Purple by default */
+  --accent1:    #2563EB;
+  --accent2:    #7C3AED;
+  --gradient:   linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(124,58,237,0.12) 100%);
+  --accent-glow: rgba(124,58,237,0.35);
+}
+
+body.light {
+  --bg:         #f5f5ff;
+  --surface:    #ffffff;
+  --surface2:   #eef0ff;
+  --border:     rgba(0,0,0,0.08);
+  --text:       #1e1b4b;
+  --text-muted: #6b7280;
+  --shadow:     rgba(0,0,0,0.08);
+}
+
+/* Accent Themes */
+body.theme-green {
+  --accent1:    #059669;
+  --accent2:    #10b981;
+  --gradient:   linear-gradient(135deg, #059669 0%, #10b981 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(5,150,105,0.12) 0%, rgba(16,185,129,0.12) 100%);
+  --accent-glow: rgba(16,185,129,0.35);
+}
+body.theme-red {
+  --accent1:    #dc2626;
+  --accent2:    #ef4444;
+  --gradient:   linear-gradient(135deg, #dc2626 0%, #f97316 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(220,38,38,0.12) 0%, rgba(249,115,22,0.12) 100%);
+  --accent-glow: rgba(239,68,68,0.35);
+}
+body.theme-orange {
+  --accent1:    #d97706;
+  --accent2:    #f59e0b;
+  --gradient:   linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(217,119,6,0.12) 0%, rgba(245,158,11,0.12) 100%);
+  --accent-glow: rgba(245,158,11,0.35);
+}
+body.theme-pink {
+  --accent1:    #be185d;
+  --accent2:    #ec4899;
+  --gradient:   linear-gradient(135deg, #be185d 0%, #ec4899 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(190,24,93,0.12) 0%, rgba(236,72,153,0.12) 100%);
+  --accent-glow: rgba(236,72,153,0.35);
+}
+body.theme-blue {
+  --accent1:    #0369a1;
+  --accent2:    #38bdf8;
+  --gradient:   linear-gradient(135deg, #0369a1 0%, #38bdf8 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(3,105,161,0.12) 0%, rgba(56,189,248,0.12) 100%);
+  --accent-glow: rgba(56,189,248,0.35);
+}
+
+/* ====== LAYOUT ====== */
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.top-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  background: var(--gradient);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 12px var(--accent-glow);
+  transition: all 0.4s;
+}
+.logo-text {
+  font-size: 16px; font-weight: 800;
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  transition: all 0.4s;
+}
+.top-actions { display: flex; gap: 8px; }
+
+/* ====== CONTROLS ====== */
+.controls-section {
+  max-width: 860px; margin: 0 auto;
+  padding: 28px 20px 0;
+}
+.controls-title {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+
+/* Mode Toggle */
+.mode-toggle {
+  display: flex; gap: 10px; margin-bottom: 24px;
+}
+.mode-btn {
+  flex: 1; padding: 12px;
+  border-radius: 12px; border: 1.5px solid var(--border);
+  font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.3s;
+  background: var(--surface2); color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.mode-btn.active {
+  background: var(--gradient); color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+/* Color Picker */
+.color-picker {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px;
+}
+.color-btn {
+  width: 48px; height: 48px; border-radius: 12px;
+  border: 3px solid transparent; cursor: pointer;
+  position: relative; transition: all 0.3s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0;
+}
+.color-btn.active {
+  border-color: var(--text);
+  transform: scale(1.1);
+}
+.color-btn.active::after {
+  content: '✓';
+  font-size: 18px; color: white;
+  font-weight: 900;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.color-label {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 5px; cursor: pointer;
+}
+.color-name {
+  font-size: 10px; font-weight: 600; color: var(--text-muted);
+}
+
+/* ====== PREVIEW ====== */
+.preview-section {
+  max-width: 860px; margin: 0 auto;
+  padding: 0 20px 40px;
+}
+.preview-label {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 2px;
+  margin: 24px 0 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* Phone mockup */
+.phone-wrap { display: flex; justify-content: center; }
+.phone {
+  width: 300px;
+  background: var(--surface);
+  border-radius: 32px;
+  border: 2px solid var(--border);
+  overflow: hidden;
+  box-shadow: 0 24px 64px var(--shadow);
+  transition: all 0.4s;
+}
+.phone-status {
+  background: var(--gradient);
+  padding: 10px 20px 6px;
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: rgba(255,255,255,0.9); font-weight: 600;
+}
+.phone-appbar {
+  background: var(--surface);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.phone-appbar-top {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.phone-appbar-logo {
+  display: flex; align-items: center; gap: 8px;
+}
+.phone-logo-icon {
+  width: 28px; height: 28px;
+  background: var(--gradient);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 2px 8px var(--accent-glow);
+  transition: all 0.4s;
+}
+.phone-logo-text {
+  font-size: 13px; font-weight: 800;
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  transition: all 0.4s;
+}
+.phone-appbar-icons {
+  display: flex; gap: 6px; font-size: 16px; color: var(--text-muted);
+}
+.phone-welcome {
+  font-size: 10px; color: var(--text-muted); margin-top: 2px;
+}
+.phone-search {
+  margin: 10px 16px 0;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text-muted);
+  transition: all 0.4s;
+}
+.phone-search-icon {
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  transition: all 0.4s;
+}
+.phone-chips {
+  display: flex; gap: 6px; padding: 10px 16px;
+  overflow: hidden;
+}
+.p-chip {
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 9px; font-weight: 700;
+  white-space: nowrap; transition: all 0.4s;
+}
+.p-chip.active {
+  background: var(--gradient); color: white;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+.p-chip.inactive {
+  background: var(--surface2); color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.phone-section-title {
+  padding: 4px 16px 8px;
+  font-size: 12px; font-weight: 700; color: var(--text);
+}
+/* Activity Cards */
+.p-card {
+  margin: 0 16px 10px;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  transition: all 0.4s;
+}
+.p-card-top { display: flex; gap: 8px; align-items: flex-start; }
+.p-card-logo {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--gradient-soft); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; transition: all 0.4s;
+}
+.p-card-info { flex: 1; }
+.p-card-name { font-size: 11px; font-weight: 700; color: var(--text); }
+.p-card-sub { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.p-card-rating {
+  background: rgba(251,191,36,0.15); color: #fbbf24;
+  font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 5px;
+  white-space: nowrap;
+}
+.p-card-actions {
+  display: flex; gap: 6px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
+.p-action {
+  flex: 1; padding: 5px; border-radius: 6px;
+  font-size: 9px; font-weight: 700; text-align: center;
+  cursor: pointer; transition: all 0.4s;
+}
+.p-action-call {
+  background: var(--gradient-soft);
+  color: var(--accent1);
+  border: 1px solid rgba(37,99,235,0.2);
+}
+.p-action-wa {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+}
+/* Bottom Nav */
+.p-bottomnav {
+  display: flex; justify-content: space-around;
+  padding: 10px 8px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.p-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.p-nav-icon { font-size: 16px; }
+.p-nav-label { font-size: 8px; font-weight: 600; color: var(--text-muted); }
+.p-nav-item.active .p-nav-icon { filter: none; }
+.p-nav-item.active .p-nav-label {
+  background: var(--gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  transition: all 0.4s;
+}
+.p-nav-dot {
+  width: 4px; height: 4px; border-radius: 100px;
+  background: var(--gradient); margin: 0 auto;
+  box-shadow: 0 0 6px var(--accent-glow);
+  transition: all 0.4s;
+}
+
+/* ====== SETTINGS PREVIEW ====== */
+.settings-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+.settings-header {
+  background: var(--gradient); padding: 20px; color: white;
+}
+.settings-header h3 { font-size: 16px; font-weight: 800; }
+.settings-header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+.settings-body { padding: 20px; }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row-left { display: flex; align-items: center; gap: 12px; }
+.settings-row-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--gradient-soft); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: all 0.4s;
+}
+.settings-row-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.settings-row-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.toggle {
+  width: 44px; height: 24px; border-radius: 100px;
+  background: var(--gradient); cursor: pointer; position: relative;
+  box-shadow: 0 2px 8px var(--accent-glow); transition: all 0.4s;
+}
+.toggle::after {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: white; top: 3px; right: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transition: all 0.3s;
+}
+.toggle.off {
+  background: var(--border); box-shadow: none;
+}
+.toggle.off::after { right: auto; left: 3px; }
+.color-dots { display: flex; gap: 5px; }
+.dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  cursor: pointer; border: 2px solid transparent;
+  transition: all 0.3s;
+}
+.dot.active { border-color: var(--text); transform: scale(1.2); }
+
+/* ====== PLAN SECTION ====== */
+.plan-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 12px;
+}
+.plan-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px;
+  transition: all 0.4s;
+}
+.plan-step {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--gradient);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; margin-bottom: 10px;
+  box-shadow: 0 3px 10px var(--accent-glow);
+  transition: all 0.4s;
+}
+.plan-title {
+  font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px;
+}
+.plan-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+/* ====== ICON BTNS ====== */
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: all 0.3s; color: var(--text-muted);
+}
+.icon-btn:hover { background: var(--gradient-soft); }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-logo">
+    <div class="logo-icon">🧭</div>
+    <span class="logo-text">دليل أي خدمة</span>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" onclick="toggleMode()" title="تبديل الوضع">🌙</button>
+    <button class="icon-btn" title="الإعدادات">⚙️</button>
+  </div>
+</div>
+
+<div class="controls-section">
+
+  <!-- MODE TOGGLE -->
+  <p class="controls-title">🌗 وضع العرض</p>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="darkBtn" onclick="setMode('dark')">🌙 الوضع الداكن</button>
+    <button class="mode-btn" id="lightBtn" onclick="setMode('light')">☀️ الوضع الفاتح</button>
+  </div>
+
+  <!-- COLOR PICKER -->
+  <p class="controls-title">🎨 لون المستخدم المفضل</p>
+  <div class="color-picker">
+    <div class="color-label">
+      <div class="color-btn active" id="theme-default" style="background:linear-gradient(135deg,#2563EB,#7C3AED)" onclick="setTheme('default','theme-default')"></div>
+      <span class="color-name">الافتراضي</span>
+    </div>
+    <div class="color-label">
+      <div class="color-btn" id="theme-blue" style="background:linear-gradient(135deg,#0369a1,#38bdf8)" onclick="setTheme('blue','theme-blue')"></div>
+      <span class="color-name">سماوي</span>
+    </div>
+    <div class="color-label">
+      <div class="color-btn" id="theme-green" style="background:linear-gradient(135deg,#059669,#10b981)" onclick="setTheme('green','theme-green')"></div>
+      <span class="color-name">أخضر</span>
+    </div>
+    <div class="color-label">
+      <div class="color-btn" id="theme-orange" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="setTheme('orange','theme-orange')"></div>
+      <span class="color-name">ذهبي</span>
+    </div>
+    <div class="color-label">
+      <div class="color-btn" id="theme-red" style="background:linear-gradient(135deg,#dc2626,#f97316)" onclick="setTheme('red','theme-red')"></div>
+      <span class="color-name">أحمر</span>
+    </div>
+    <div class="color-label">
+      <div class="color-btn" id="theme-pink" style="background:linear-gradient(135deg,#be185d,#ec4899)" onclick="setTheme('pink','theme-pink')"></div>
+      <span class="color-name">وردي</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="preview-section">
+
+  <!-- PHONE PREVIEW -->
+  <p class="preview-label">📱 معاينة التطبيق</p>
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="phone-status">
+        <span>9:41 ص</span><span>📶 🔋</span>
+      </div>
+      <div class="phone-appbar">
+        <div class="phone-appbar-top">
+          <div class="phone-appbar-logo">
+            <div class="phone-logo-icon">🧭</div>
+            <div>
+              <div class="phone-logo-text">دليل أي خدمة</div>
+              <div class="phone-welcome">أهلاً بك، محمد 👋</div>
+            </div>
+          </div>
+          <div class="phone-appbar-icons">🔔 ⚙️</div>
+        </div>
+        <div class="phone-search">
+          <span class="phone-search-icon">🔍</span>
+          <span>ابحث عن خدمة...</span>
+        </div>
+      </div>
+      <div class="phone-chips">
+        <div class="p-chip active">الكل</div>
+        <div class="p-chip inactive">القاهرة</div>
+        <div class="p-chip inactive">الجيزة</div>
+        <div class="p-chip inactive">الإسكندرية</div>
+      </div>
+      <div class="phone-section-title">⭐ الخدمات المميزة</div>
+      <div class="p-card">
+        <div class="p-card-top">
+          <div class="p-card-logo">🔧</div>
+          <div class="p-card-info">
+            <div class="p-card-name">مركز صيانة الأجهزة</div>
+            <div class="p-card-sub">صيانة • القاهرة</div>
+          </div>
+          <div class="p-card-rating">⭐ 4.8</div>
+        </div>
+        <div class="p-card-actions">
+          <div class="p-action p-action-call">📞 اتصال</div>
+          <div class="p-action p-action-wa">💬 واتساب</div>
+        </div>
+      </div>
+      <div class="p-card">
+        <div class="p-card-top">
+          <div class="p-card-logo">🏥</div>
+          <div class="p-card-info">
+            <div class="p-card-name">عيادة الدكتور أحمد</div>
+            <div class="p-card-sub">طب عام • الجيزة</div>
+          </div>
+          <div class="p-card-rating">⭐ 4.9</div>
+        </div>
+        <div class="p-card-actions">
+          <div class="p-action p-action-call">📞 اتصال</div>
+          <div class="p-action p-action-wa">💬 واتساب</div>
+        </div>
+      </div>
+      <div class="p-bottomnav">
+        <div class="p-nav-item active">
+          <div class="p-nav-icon">🏠</div>
+          <div class="p-nav-dot"></div>
+          <div class="p-nav-label">الرئيسية</div>
+        </div>
+        <div class="p-nav-item">
+          <div class="p-nav-icon">🔍</div>
+          <div class="p-nav-label">بحث</div>
+        </div>
+        <div class="p-nav-item">
+          <div class="p-nav-icon">🗺️</div>
+          <div class="p-nav-label">خريطة</div>
+        </div>
+        <div class="p-nav-item">
+          <div class="p-nav-icon">❤️</div>
+          <div class="p-nav-label">مفضلة</div>
+        </div>
+        <div class="p-nav-item">
+          <div class="p-nav-icon">👤</div>
+          <div class="p-nav-label">حسابي</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS CARD -->
+  <p class="preview-label">⚙️ شاشة الإعدادات — Theme Section</p>
+  <div class="settings-card">
+    <div class="settings-header">
+      <h3>⚙️ الإعدادات</h3>
+      <p>خصّص تجربتك في التطبيق</p>
+    </div>
+    <div class="settings-body">
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🌙</div>
+          <div>
+            <div class="settings-row-title">الوضع الداكن</div>
+            <div class="settings-row-sub">تغيير مظهر التطبيق</div>
+          </div>
+        </div>
+        <div class="toggle" id="darkToggle" onclick="toggleDarkRow()"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🎨</div>
+          <div>
+            <div class="settings-row-title">لون التطبيق</div>
+            <div class="settings-row-sub">اختر لونك المفضل</div>
+          </div>
+        </div>
+        <div class="color-dots">
+          <div class="dot active" style="background:linear-gradient(135deg,#2563EB,#7C3AED)" onclick="setTheme('default','theme-default')"></div>
+          <div class="dot" style="background:linear-gradient(135deg,#0369a1,#38bdf8)" onclick="setTheme('blue','theme-blue')"></div>
+          <div class="dot" style="background:linear-gradient(135deg,#059669,#10b981)" onclick="setTheme('green','theme-green')"></div>
+          <div class="dot" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="setTheme('orange','theme-orange')"></div>
+          <div class="dot" style="background:linear-gradient(135deg,#dc2626,#f97316)" onclick="setTheme('red','theme-red')"></div>
+          <div class="dot" style="background:linear-gradient(135deg,#be185d,#ec4899)" onclick="setTheme('pink','theme-pink')"></div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔔</div>
+          <div>
+            <div class="settings-row-title">الإشعارات</div>
+            <div class="settings-row-sub">استقبال التنبيهات</div>
+          </div>
+        </div>
+        <div class="toggle" onclick="this.classList.toggle('off')"></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">📍</div>
+          <div>
+            <div class="settings-row-title">الموقع الجغرافي</div>
+            <div class="settings-row-sub">تحديد موقعك تلقائياً</div>
+          </div>
+        </div>
+        <div class="toggle" onclick="this.classList.toggle('off')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAN -->
+  <p class="preview-label">🗺️ خطة التنفيذ</p>
+  <div class="plan-grid">
+    <div class="plan-card">
+      <div class="plan-step">1️⃣</div>
+      <div class="plan-title">AppTheme System</div>
+      <div class="plan-sub">ملف colors.dart لكل الثيمات + ThemeData كامل</div>
+    </div>
+    <div class="plan-card">
+      <div class="plan-step">2️⃣</div>
+      <div class="plan-title">ThemeProvider</div>
+      <div class="plan-sub">Riverpod provider يحفظ الوضع واللون في SharedPrefs</div>
+    </div>
+    <div class="plan-card">
+      <div class="plan-step">3️⃣</div>
+      <div class="plan-title">Home Screen</div>
+      <div class="plan-sub">إعادة تصميم كاملة بالهوية الجديدة</div>
+    </div>
+    <div class="plan-card">
+      <div class="plan-step">4️⃣</div>
+      <div class="plan-title">Settings Screen</div>
+      <div class="plan-sub">واجهة اختيار الثيم والداكن/الفاتح</div>
+    </div>
+  </div>
+  <div class="plan-card" style="margin-bottom:12px">
+    <div class="plan-step">5️⃣</div>
+    <div class="plan-title">باقي الشاشات</div>
+    <div class="plan-sub">تطبيق الثيم على كل الشاشات: Search, Map, Details, Profile, Favorites, Notifications</div>
+  </div>
+
+</div>
+
+<script>
+let currentMode = 'dark';
+let currentTheme = 'default';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.body.classList.toggle('light', mode === 'light');
+  document.getElementById('darkBtn').classList.toggle('active', mode === 'dark');
+  document.getElementById('lightBtn').classList.toggle('active', mode === 'light');
+  const dt = document.getElementById('darkToggle');
+  dt.classList.toggle('off', mode === 'light');
+}
+
+function toggleMode() {
+  setMode(currentMode === 'dark' ? 'light' : 'dark');
+}
+
+function toggleDarkRow() {
+  setMode(currentMode === 'dark' ? 'light' : 'dark');
+}
+
+function setTheme(name, btnId) {
+  // Remove all theme classes
+  ['theme-green','theme-red','theme-orange','theme-pink','theme-blue'].forEach(t => {
+    document.body.classList.remove(t);
+  });
+  if(name !== 'default') document.body.classList.add('theme-' + name);
+
+  // Update big color buttons
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(btnId).classList.add('active');
+
+  // Update dots
+  document.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.remove('active');
+    const map = ['default','blue','green','orange','red','pink'];
+    if(map[i] === name) d.classList.add('active');
+  });
+
+  currentTheme = name;
+}
+</script>
+</body>
+</html>
