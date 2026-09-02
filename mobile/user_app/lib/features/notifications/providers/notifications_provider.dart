@@ -75,6 +75,21 @@ class NotificationsNotifier extends StateNotifier<NotificationsState> {
     await _repository.markAsRead(notificationId);
   }
 
+  /// Alias kept for screens calling the shorter name.
+  Future<void> markRead(int notificationId) => markAsRead(notificationId);
+
+  Future<void> markAllRead() async {
+    final unreadIds = state.notifications.where((n) => !n.isRead).map((n) => n.id).toList();
+    if (unreadIds.isEmpty) return;
+
+    state = state.copyWith(
+      notifications: state.notifications.map((n) => n.copyWith(isRead: true)).toList(),
+      unreadCount: 0,
+    );
+
+    await Future.wait(unreadIds.map((id) => _repository.markAsRead(id)));
+  }
+
   Future<AppNotificationModel?> triggerTestNotification({
     String? title,
     String? body,

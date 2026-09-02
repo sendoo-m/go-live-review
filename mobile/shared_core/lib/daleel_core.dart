@@ -35,5 +35,7 @@ export 'security/security_utils.dart';
 export 'state/auth_state.dart';
 export 'theme/app_colors.dart';
 export 'theme/app_theme.dart';
+export 'theme/app_color_scheme.dart';
+export 'theme/theme_provider.dart';
 export 'localization/app_strings.dart';
 export 'widgets/app_network_image.dart';

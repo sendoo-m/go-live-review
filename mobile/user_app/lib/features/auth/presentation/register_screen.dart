@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:daleel_core/daleel_core.dart';
 import '../../../config/routes.dart';
 import '../providers/auth_provider.dart';
-import 'login_screen.dart' show _inputDeco, _GradientLabel, _GradientButton;
+import 'auth_widgets.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -149,11 +149,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _GradientLabel(label: 'الاسم الكامل'),
+                            GradientLabel(label: 'الاسم الكامل'),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _nameCtrl,
-                              decoration: _inputDeco(
+                              decoration: authInputDeco(
                                 hint: 'محمد أحمد',
                                 icon: Icons.person_outline_rounded,
                               ),
@@ -162,12 +162,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 14),
-                            _GradientLabel(label: 'البريد الإلكتروني'),
+                            GradientLabel(label: 'البريد الإلكتروني'),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _emailCtrl,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: _inputDeco(
+                              decoration: authInputDeco(
                                 hint: 'example@email.com',
                                 icon: Icons.alternate_email_rounded,
                               ),
@@ -179,12 +179,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               },
                             ),
                             const SizedBox(height: 14),
-                            _GradientLabel(label: 'رقم الهاتف'),
+                            GradientLabel(label: 'رقم الهاتف'),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _phoneCtrl,
                               keyboardType: TextInputType.phone,
-                              decoration: _inputDeco(
+                              decoration: authInputDeco(
                                 hint: '01xxxxxxxxx',
                                 icon: Icons.phone_outlined,
                               ),
@@ -193,12 +193,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 14),
-                            _GradientLabel(label: 'كلمة المرور'),
+                            GradientLabel(label: 'كلمة المرور'),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _passCtrl,
                               obscureText: _obscure,
-                              decoration: _inputDeco(
+                              decoration: authInputDeco(
                                 hint: '••••••••',
                                 icon: Icons.lock_outline_rounded,
                               ).copyWith(
@@ -219,12 +219,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 14),
-                            _GradientLabel(label: 'تأكيد كلمة المرور'),
+                            GradientLabel(label: 'تأكيد كلمة المرور'),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _confirmCtrl,
                               obscureText: _obscure2,
-                              decoration: _inputDeco(
+                              decoration: authInputDeco(
                                 hint: '••••••••',
                                 icon: Icons.lock_outline_rounded,
                               ).copyWith(
@@ -245,7 +245,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   : null,
                             ),
                             const SizedBox(height: 24),
-                            _GradientButton(
+                            GradientAuthButton(
                               label: 'إنشاء الحساب',
                               isLoading: isLoading,
                               onTap: _submit,
