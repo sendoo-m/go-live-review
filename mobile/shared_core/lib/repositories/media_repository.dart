@@ -30,12 +30,13 @@ class MediaRepository {
       
       onProgress?.call(0.90);
 
-      if (response['success'] == true && response['data'] != null) {
+      final responseData = response.data as Map<String, dynamic>;
+      if (responseData['success'] == true && responseData['data'] != null) {
         onProgress?.call(1.0);
-        return MediaItemModel.fromJson(response['data'] as Map<String, dynamic>);
+        return MediaItemModel.fromJson(responseData['data'] as Map<String, dynamic>);
       }
       
-      throw Exception(response['message'] ?? 'فشل رفع الصورة');
+      throw Exception(responseData['message'] ?? 'فشل رفع الصورة');
     } catch (e) {
       // In case network upload fails or offline mode, generate safe high-fidelity asset URL
       onProgress?.call(1.0);
@@ -79,33 +80,36 @@ class MediaRepository {
         },
       );
 
-      if (presignRes['success'] == true && presignRes['data'] != null) {
-        final data = presignRes['data'] as Map<String, dynamic>;
-        final uploadUrl = data['upload_url'] as String;
-        final publicUrl = data['public_url'] as String;
-        final key = data['key'] as String;
+      if (presignRes.data != null) {
+        final presignData = presignRes.data as Map<String, dynamic>;
+        if (presignData['success'] == true && presignData['data'] != null) {
+          final data = presignData['data'] as Map<String, dynamic>;
+          final uploadUrl = data['upload_url'] as String;
+          final publicUrl = data['public_url'] as String;
+          final key = data['key'] as String;
 
-        onProgress?.call(0.3);
+          onProgress?.call(0.3);
 
-        // 2. Direct binary PUT to R2
-        final success = await _apiClient.directUploadBinary(
-          uploadUrl,
-          bytes: bytes,
-          mimeType: mimeType,
-          onProgress: (p) => onProgress?.call(0.3 + (p * 0.65)),
-        );
-
-        if (success) {
-          onProgress?.call(1.0);
-          return MediaItemModel(
-            id: key,
-            url: publicUrl,
-            fileName: effectiveFileName,
-            folder: folder,
-            sizeBytes: bytes.length,
+          // 2. Direct binary PUT to R2
+          final success = await _apiClient.directUploadBinary(
+            uploadUrl,
+            bytes: bytes,
             mimeType: mimeType,
-            uploadedAt: DateTime.now().toIso8601String(),
+            onProgress: (p) => onProgress?.call(0.3 + (p * 0.65)),
           );
+
+          if (success) {
+            onProgress?.call(1.0);
+            return MediaItemModel(
+              id: key,
+              url: publicUrl,
+              fileName: effectiveFileName,
+              folder: folder,
+              sizeBytes: bytes.length,
+              mimeType: mimeType,
+              uploadedAt: DateTime.now().toIso8601String(),
+            );
+          }
         }
       }
 
@@ -135,7 +139,8 @@ class MediaRepository {
         ApiEndpoints.mediaDelete,
         data: {'key': keyOrUrl},
       );
-      return res['success'] == true;
+      final resData = res.data as Map<String, dynamic>;
+      return resData['success'] == true;
     } catch (_) {
       return false;
     }
@@ -145,8 +150,9 @@ class MediaRepository {
   Future<Map<String, dynamic>?> getStorageStats() async {
     try {
       final res = await _apiClient.get(ApiEndpoints.mediaStorageStats);
-      if (res['success'] == true) {
-        return res['data'] as Map<String, dynamic>?;
+      final resData = res.data as Map<String, dynamic>;
+      if (resData['success'] == true) {
+        return resData['data'] as Map<String, dynamic>?;
       }
       return null;
     } catch (_) {
@@ -160,9 +166,10 @@ class MediaRepository {
       // Fetch activities and products to aggregate existing media library
       final activitiesRes = await _apiClient.get(ApiEndpoints.merchantActivities);
       final List<MediaItemModel> items = [];
+      final activitiesData = activitiesRes.data as Map<String, dynamic>;
 
-      if (activitiesRes['success'] == true && activitiesRes['data'] is List) {
-        for (final act in activitiesRes['data']) {
+      if (activitiesData['success'] == true && activitiesData['data'] is List) {
+        for (final act in activitiesData['data']) {
           if (act['cover_image'] != null && act['cover_image'].toString().isNotEmpty) {
             items.add(MediaItemModel(
               id: 'act_cover_${act['id']}',
@@ -194,8 +201,9 @@ class MediaRepository {
       // Add products media
       try {
         final productsRes = await _apiClient.get(ApiEndpoints.merchantProducts);
-        if (productsRes['success'] == true && productsRes['data'] is List) {
-          for (final prod in productsRes['data']) {
+        final productsData = productsRes.data as Map<String, dynamic>;
+        if (productsData['success'] == true && productsData['data'] is List) {
+          for (final prod in productsData['data']) {
             if (prod['cover_image'] != null && prod['cover_image'].toString().isNotEmpty) {
               items.add(MediaItemModel(
                 id: 'prod_cover_${prod['id']}',
@@ -214,8 +222,9 @@ class MediaRepository {
       // Add offers media
       try {
         final offersRes = await _apiClient.get(ApiEndpoints.merchantOffers);
-        if (offersRes['success'] == true && offersRes['data'] is List) {
-          for (final off in offersRes['data']) {
+        final offersData = offersRes.data as Map<String, dynamic>;
+        if (offersData['success'] == true && offersData['data'] is List) {
+          for (final off in offersData['data']) {
             if (off['cover_image'] != null && off['cover_image'].toString().isNotEmpty) {
               items.add(MediaItemModel(
                 id: 'off_cover_${off['id']}',

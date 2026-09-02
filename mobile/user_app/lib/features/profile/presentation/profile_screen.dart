@@ -18,7 +18,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
-    final favCount = ref.watch(favoritesNotifierProvider).favorites.length;
+    final favCount = ref.watch(favoritesProvider).favorites.length;
 
     if (!authState.isAuthenticated || authState.user == null) {
       return Scaffold(

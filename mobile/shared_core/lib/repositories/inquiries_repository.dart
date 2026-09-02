@@ -35,17 +35,18 @@ class InquiriesRepository {
     try {
       final response = await _apiClient.get(
         ApiEndpoints.merchantInquiries,
-        queryParams: queryParams.isNotEmpty ? queryParams : null,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
-      if (response['success'] == true) {
-        final rawList = response['data'] is List ? response['data'] as List : [];
+      final responseData = response.data as Map<String, dynamic>;
+      if (responseData['success'] == true) {
+        final rawList = responseData['data'] is List ? responseData['data'] as List : [];
         final inquiries = rawList
             .map((item) => InquiryModel.fromJson(item as Map<String, dynamic>))
             .toList();
 
-        final rawCounts = response['counts'] is Map<String, dynamic>
-            ? response['counts'] as Map<String, dynamic>
+        final rawCounts = responseData['counts'] is Map<String, dynamic>
+            ? responseData['counts'] as Map<String, dynamic>
             : <String, dynamic>{};
         final counts = InquiryCountsModel.fromJson(rawCounts);
 
@@ -57,10 +58,11 @@ class InquiriesRepository {
       try {
         final publicRes = await _apiClient.get(
           ApiEndpoints.inquiries,
-          queryParams: activityId != null ? {'activity_id': activityId} : null,
+          queryParameters: activityId != null ? {'activity_id': activityId} : null,
         );
-        if (publicRes['success'] == true && publicRes['data'] is List) {
-          final inquiries = (publicRes['data'] as List)
+        final publicData = publicRes.data as Map<String, dynamic>;
+        if (publicData['success'] == true && publicData['data'] is List) {
+          final inquiries = (publicData['data'] as List)
               .map((item) => InquiryModel.fromJson(item as Map<String, dynamic>))
               .toList();
           return InquiriesFetchResult(
@@ -77,10 +79,11 @@ class InquiriesRepository {
   Future<InquiryModel> getInquiryDetails(int id) async {
     try {
       final response = await _apiClient.get(ApiEndpoints.inquiryDetails(id));
-      if (response['success'] == true && response['data'] != null) {
-        return InquiryModel.fromJson(response['data'] as Map<String, dynamic>);
+      final responseData = response.data as Map<String, dynamic>;
+      if (responseData['success'] == true && responseData['data'] != null) {
+        return InquiryModel.fromJson(responseData['data'] as Map<String, dynamic>);
       }
-      throw Exception(response['message'] ?? 'فشل تحميل بيانات الاستفسار');
+      throw Exception(responseData['message'] ?? 'فشل تحميل بيانات الاستفسار');
     } catch (e) {
       // Fallback
       throw Exception('تعذر استرداد تفاصيل الاستفسار: $e');
@@ -97,10 +100,11 @@ class InquiriesRepository {
       },
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      return InquiryModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return InquiryModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل تحديث حالة الاستفسار');
+    throw Exception(responseData['message'] ?? 'فشل تحديث حالة الاستفسار');
   }
 
   /// Update internal merchant private notes
@@ -110,10 +114,11 @@ class InquiriesRepository {
       data: {'notes': notes},
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      return InquiryModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return InquiryModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل حفظ الملاحظات');
+    throw Exception(responseData['message'] ?? 'فشل حفظ الملاحظات');
   }
 
   /// Mark inquiry as read or unread
@@ -123,10 +128,11 @@ class InquiriesRepository {
       data: {'is_read': isRead},
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      return InquiryModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return InquiryModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل تغيير حالة القراءة');
+    throw Exception(responseData['message'] ?? 'فشل تغيير حالة القراءة');
   }
 
   /// Record an outreach action (e.g. WhatsApp opened, phone call initiated, quick template sent)
@@ -145,10 +151,11 @@ class InquiriesRepository {
       },
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      return InquiryModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return InquiryModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل تسجيل عملية التواصل');
+    throw Exception(responseData['message'] ?? 'فشل تسجيل عملية التواصل');
   }
 
   /// Create a new inquiry (Customer side submission)
@@ -178,9 +185,10 @@ class InquiriesRepository {
       },
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      return InquiryModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return InquiryModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل إرسال الاستفسار');
+    throw Exception(responseData['message'] ?? 'فشل إرسال الاستفسار');
   }
 }

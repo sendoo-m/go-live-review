@@ -79,8 +79,8 @@ class GovernorateModel {
     required this.nameAr,
     required this.nameEn,
     required this.code,
-    required this.latitude,
-    required this.longitude,
+    this.latitude = 0.0,
+    this.longitude = 0.0,
   });
 
   factory GovernorateModel.fromJson(Map<String, dynamic> json) {
@@ -89,8 +89,19 @@ class GovernorateModel {
       nameAr: json['name_ar'] ?? '',
       nameEn: json['name_en'] ?? '',
       code: json['code'] ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 30.0444,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? 31.2357,
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name_ar': nameAr,
+      'name_en': nameEn,
+      'code': code,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
   }
 }

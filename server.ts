@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import * as XLSX from "xlsx";
@@ -2684,12 +2685,41 @@ async function startServer() {
   app.use(express.json());
 
   // CORS for Flutter web and external frontends
+  app.use(
+    cors({
+      origin: [
+        /^http:\/\/localhost(:\d+)?$/,
+        /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+        'http://localhost:*',
+        'http://127.0.0.1:*',
+      ],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: [
+        "Origin",
+        "X-Requested-With",
+        "Content-Type",
+        "Accept",
+        "Authorization",
+        "Accept-Language",
+        "X-Client-Platform",
+        "X-User-Id",
+      ],
+      credentials: true,
+    })
+  );
+
+  // Fallback headers and URL rewrite to support both /api/* and /api/v2/*
   app.use((req: Request, res: Response, next: NextFunction) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Accept-Language, X-User-Id");
     res.header("Content-Language", "ar");
     res.header("X-Direction", "rtl");
+
+    if (
+      req.url.startsWith("/api/") &&
+      !req.url.startsWith("/api/v2/") &&
+      !req.url.startsWith("/api/health")
+    ) {
+      req.url = req.url.replace(/^\/api\//, "/api/v2/");
+    }
 
     if (req.method === "OPTIONS") {
       return res.sendStatus(200);

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flutter Fix Prompt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117; --surface: #1a1d27; --surface2: #222636;
+  --border: #2e3347; --text: #e2e6f0; --muted: #8a90a8;
+  --accent: #5b8af5; --success: #4ade80; --error: #f87171;
+  --radius: 12px;
+}
+body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 16px 80px; }
+.wrap { max-width: 860px; margin: 0 auto; }
+.header { text-align: center; padding: 40px 0 28px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; background: #5b8af520; border: 1px solid #5b8af540; color: var(--accent); padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+h1 { font-size: clamp(20px, 4vw, 32px); font-weight: 900; margin-bottom: 10px; }
+.header p { color: var(--muted); font-size: 14px; max-width: 480px; margin: 0 auto; line-height: 1.7; }
+.steps { display: flex; gap: 8px; margin: 24px 0; flex-wrap: wrap; justify-content: center; }
+.step { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px; font-size: 12px; color: var(--muted); }
+.snum { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 18px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.card-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.copy-btn { display: flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.copy-btn:hover { background: #7c5bf5; }
+.copy-btn.ok { background: #166534; }
+.pbox { padding: 18px 20px; font-size: 13px; line-height: 1.9; color: #c8d0e8; max-height: 440px; overflow-y: auto; white-space: pre-wrap; }
+.pbox::-webkit-scrollbar { width: 5px; }
+.pbox::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.egrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; padding: 16px; }
+.ec { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.ef { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px; word-break: break-all; }
+.em { font-size: 12px; color: var(--error); font-weight: 700; margin-bottom: 3px; }
+.ex { font-size: 12px; color: var(--muted); }
+.links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.lnk { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+.lnk:hover { border-color: var(--accent); }
+.lic { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #5b8af515; }
+.lnk strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.lnk span { font-size: 12px; color: var(--muted); }
+.after { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.after h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+.ai { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.ai:last-child { border: none; }
+.sc { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--accent); color: var(--accent); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.ai strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.ai p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.ai code { display: inline-block; background: #0f1117; border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--success); direction: ltr; font-family: monospace; margin-top: 4px; }
+@media (max-width: 560px) { .links { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="badge">⚡ Flutter Fix — Daleel Ay Khedmah</div>
+    <h1>أخطاء المشروع جاهزة للإصلاح 🛠️</h1>
+    <p>انسخ البرومت، افتح Google AI Studio، حمّل الملفات — وهو هيعدلهم كلهم</p>
+  </div>
+
+  <div class="steps">
+    <div class="step"><div class="snum">1</div> افتح AI Studio</div>
+    <div class="step"><div class="snum">2</div> حمّل الملفات</div>
+    <div class="step"><div class="snum">3</div> انسخ البرومت</div>
+    <div class="step"><div class="snum">4</div> احفظ الإصلاحات</div>
+    <div class="step"><div class="snum">5</div> ارفع على GitHub ✅</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">🐛 الأخطاء المكتشفة — 8 مجموعات</div>
+    </div>
+    <div class="egrid">
+      <div class="ec"><div class="ef">app_theme.dart</div><div class="em">CardTheme → CardThemeData</div><div class="ex">تغيير اسم الكلاس</div></div>
+      <div class="ec"><div class="ef">user_model.dart</div><div class="em">role getter not found</div><div class="ex">إضافة حقل role</div></div>
+      <div class="ec"><div class="ef">app_bootstrap.dart</div><div class="em">latitude required</div><div class="ex">إضافة latitude/longitude</div></div>
+      <div class="ec"><div class="ef">activity_model.dart</div><div class="em">isFeatured + toJson missing</div><div class="ex">إضافة حقل ودالة</div></div>
+      <div class="ec"><div class="ef">favorite_button.dart</div><div class="em">build() missing WidgetRef</div><div class="ex">إصلاح ConsumerWidget</div></div>
+      <div class="ec"><div class="ef">osm_leaflet_map_view.dart</div><div class="em">Type Point not found</div><div class="ex">إضافة import dart:math</div></div>
+      <div class="ec"><div class="ef">offers / media / inquiries repositories</div><div class="em">response[] operator missing</div><div class="ex">استخدام response.data</div></div>
+      <div class="ec"><div class="ef">app_colors.dart + home_provider.dart</div><div class="em">success/info/governorates</div><div class="ex">إضافة الثوابت والحقل</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">📋 البرومت الجاهز — انسخه وابعته لـ Gemini</div>
+      <button class="copy-btn" onclick="copyIt(this)">📋 نسخ</button>
+    </div>
+    <div class="pbox" id="pt">أنا أعمل على مشروع Flutter اسمه "Daleel Ay Khedmah" وعندي أخطاء compile-time كثيرة. محتاج منك تصلح كل الملفات التالية وترسلها لي كاملة جاهزة للاستخدام.
+
+══════════════════════════════════════
+الأخطاء والملفات المطلوب إصلاحها:
+══════════════════════════════════════
+
+1) shared_core/lib/theme/app_theme.dart
+الخطأ: CardTheme can't be assigned to CardThemeData
+الإصلاح: غيّر كل CardTheme( إلى CardThemeData(
+
+2) shared_core/lib/models/user_model.dart
+الخطأ: The getter 'role' isn't defined for the type 'UserModel'
+الإصلاح: أضف حقل role للـ model:
+  final String? role;
+مع إضافته في الـ constructor وfromJson وcopyWith إن وُجدت.
+
+3) shared_core/lib/models/app_bootstrap.dart (GovernorateModel)
+الخطأ: Required named parameter 'latitude' must be provided
+الإصلاح: أضف حقلين latitude وlongitude من نوع double للـ GovernorateModel مع قيم افتراضية 0.0، وأضفهما في fromJson.
+
+4) shared_core/lib/models/activity_model.dart (CategoryModel + ActivityModel)
+الخطأ الأول: No named parameter 'isFeatured' في CategoryModel
+الإصلاح: أضف final bool isFeatured; مع قيمة false افتراضية وأضفه في fromJson.
+الخطأ الثاني: toJson not defined for ActivityModel
+الإصلاح: أضف دالة toJson() كاملة تعيد Map<String, dynamic>.
+
+5) lib/features/favorites/presentation/widgets/favorite_button.dart
+الخطأ: build() has fewer positional arguments than ConsumerWidget.build
+الإصلاح: غيّر:
+  Widget build(BuildContext context, WidgetRef ref) {
+الكلاس يرث من ConsumerWidget.
+
+6) lib/features/map/presentation/widgets/osm_leaflet_map_view.dart
+الخطأ: Type 'Point' not found
+الإصلاح: أضف في أعلى الملف:
+  import 'dart:math' show Point;
+
+7) جميع ملفات الـ Repositories:
+- shared_core/lib/repositories/offers_repository.dart
+- shared_core/lib/repositories/media_repository.dart
+- shared_core/lib/repositories/merchant_profile_repository.dart
+- shared_core/lib/repositories/inquiries_repository.dart
+
+الخطأ: operator '[]' isn't defined for Response<dynamic>
+الإصلاح: استبدل response['key'] بـ:
+  final responseData = response.data as Map<String, dynamic>;
+  // ثم استخدم responseData['key']
+
+خطأ إضافي في inquiries_repository.dart:
+queryParams: → queryParameters: (اسم Dio الصحيح)
+
+8) shared_core/lib/theme/app_colors.dart
+الخطأ: AppColors.success وAppColors.info غير معرّفين
+الإصلاح:
+  static const Color success = Color(0xFF4CAF50);
+  static const Color info = Color(0xFF2196F3);
+
+9) lib/features/home/providers/home_provider.dart (HomeState)
+الخطأ: 'governorates' isn't defined for HomeState
+الإصلاح: أضف للـ HomeState:
+  final List<GovernorateModel> governorates;
+مع قيمة افتراضية const [].
+
+10) lib/features/profile/presentation/profile_screen.dart
+الخطأ الأول: favoritesNotifierProvider غير معرّف
+الإصلاح: استبدله بـ favoritesProvider
+
+الخطأ الثاني: Member not found: 'success' في:
+  backgroundColor: success ? AppColors.success : AppColors.error
+الإصلاح: تأكد أن bool success معرّف في نفس الـ scope.
+
+══════════════════════════════════════
+تعليمات مهمة:
+══════════════════════════════════════
+1. أرسل كل ملف كاملاً وليس تعديلات جزئية فقط
+2. لا تغيّر أي منطق موجود، فقط أصلح الأخطاء المذكورة
+3. إذا احتجت ترى محتوى ملف قبل تعديله، قل لي واحمله لك
+4. بعد الإصلاح، اذكر قائمة بكل ملف عدّلته</div>
+  </div>
+
+  <div style="margin:18px 0 8px;font-size:13px;color:var(--muted);font-weight:600">🔗 افتح من هنا</div>
+  <div class="links">
+    <a href="https://aistudio.google.com/prompts/new_chat" target="_blank" rel="noopener" class="lnk">
+      <div class="lic">🧠</div>
+      <div><strong>Google AI Studio</strong><span>ابعت البرومت + حمّل الملفات</span></div>
+    </a>
+    <a href="https://github.com/sendoo-m" target="_blank" rel="noopener" class="lnk">
+      <div class="lic">🐙</div>
+      <div><strong>GitHub — sendoo-m</strong><span>ارفع الملفات المُصلحة</span></div>
+    </a>
+  </div>
+
+  <div class="after">
+    <h3>✅ بعد ما Gemini يرسل الملفات المُصلحة:</h3>
+    <div class="ai"><div class="sc">1</div><div><strong>احفظ كل ملف في مكانه الصحيح</strong><p>استبدل كل ملف قديم بالنسخة الجديدة</p></div></div>
+    <div class="ai"><div class="sc">2</div><div><strong>أنشئ مجلدات assets</strong><code>mkdir -p assets/images assets/icons</code></div></div>
+    <div class="ai"><div class="sc">3</div><div><strong>أضف Web Support</strong><code>flutter create . --platforms web</code></div></div>
+    <div class="ai"><div class="sc">4</div><div><strong>شغّل pub get</strong><code>flutter pub get</code></div></div>
+    <div class="ai"><div class="sc">5</div><div><strong>جرّب التشغيل</strong><code>flutter run -d chrome</code></div></div>
+    <div class="ai"><div class="sc">6</div><div><strong>ارفع على GitHub</strong><p>قولي وهرفعهم تلقائياً من هنا 🚀</p></div></div>
+  </div>
+</div>
+<script>
+function copyIt(btn){
+  navigator.clipboard.writeText(document.getElementById('pt').innerText).then(()=>{
+    btn.textContent='✅ تم!'; btn.classList.add('ok');
+    setTimeout(()=>{btn.textContent='📋 نسخ';btn.classList.remove('ok')},2500);
+  });
+}
+</script>
+</body>
+</html>

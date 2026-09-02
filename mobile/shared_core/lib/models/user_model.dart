@@ -4,6 +4,7 @@ class UserModel {
   final String email;
   final String? phone;
   final int roleId;
+  final String? role;
   final String? roleName;
   final String? roleDisplayNameAr;
   final int? locationId;
@@ -18,6 +19,7 @@ class UserModel {
     required this.email,
     this.phone,
     required this.roleId,
+    this.role,
     this.roleName,
     this.roleDisplayNameAr,
     this.locationId,
@@ -27,7 +29,14 @@ class UserModel {
     this.permissions = const [],
   });
 
-  bool get isMerchant => roleName == 'تاجر' || roleName == 'merchant' || roleId == 7 || roleId == 6 || roleId == 1;
+  bool get isMerchant =>
+      role == 'merchant' ||
+      role == 'تاجر' ||
+      roleName == 'تاجر' ||
+      roleName == 'merchant' ||
+      roleId == 7 ||
+      roleId == 6 ||
+      roleId == 1;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -36,13 +45,48 @@ class UserModel {
       email: json['email'] ?? '',
       phone: json['phone'],
       roleId: json['role_id'] ?? 8,
-      roleName: json['role_name'] ?? (json['role'] is Map ? json['role']['name'] : null),
+      role: json['role'] is String
+          ? json['role']
+          : (json['role'] is Map ? json['role']['name'] : json['role_name']),
+      roleName: json['role_name'] ?? (json['role'] is Map ? json['role']['name'] : (json['role'] is String ? json['role'] : null)),
       roleDisplayNameAr: json['role_display_name_ar'] ?? (json['role'] is Map ? json['role']['display_name_ar'] : null),
       locationId: json['location_id'] ?? json['governorate_id'],
       locationNameAr: json['location_name_ar'],
       avatarUrl: json['avatar_url'],
       isActive: json['is_active'] ?? true,
       permissions: (json['permissions'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+    );
+  }
+
+  UserModel copyWith({
+    int? id,
+    String? name,
+    String? email,
+    String? phone,
+    int? roleId,
+    String? role,
+    String? roleName,
+    String? roleDisplayNameAr,
+    int? locationId,
+    String? locationNameAr,
+    String? avatarUrl,
+    bool? isActive,
+    List<String>? permissions,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      roleId: roleId ?? this.roleId,
+      role: role ?? this.role,
+      roleName: roleName ?? this.roleName,
+      roleDisplayNameAr: roleDisplayNameAr ?? this.roleDisplayNameAr,
+      locationId: locationId ?? this.locationId,
+      locationNameAr: locationNameAr ?? this.locationNameAr,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      isActive: isActive ?? this.isActive,
+      permissions: permissions ?? this.permissions,
     );
   }
 
@@ -53,6 +97,7 @@ class UserModel {
       'email': email,
       'phone': phone,
       'role_id': roleId,
+      'role': role,
       'role_name': roleName,
       'role_display_name_ar': roleDisplayNameAr,
       'location_id': locationId,

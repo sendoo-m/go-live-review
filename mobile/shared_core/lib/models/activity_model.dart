@@ -100,6 +100,42 @@ class ActivityModel {
       productsCount: json['products_count'] ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name_ar': nameAr,
+      'name_en': nameEn,
+      'slug': slug,
+      'description_ar': descriptionAr,
+      'category_id': categoryId,
+      'category_name_ar': categoryNameAr,
+      'category_icon': categoryIcon,
+      'governorate_id': governorateId,
+      'governorate_name_ar': governorateNameAr,
+      'city_id': cityId,
+      'city_name_ar': cityNameAr,
+      'address_ar': addressAr,
+      'phone': phone,
+      'whatsapp': whatsapp,
+      'email': email,
+      'website': website,
+      'latitude': latitude,
+      'longitude': longitude,
+      'distance_km': distanceKm,
+      'status': status,
+      'is_featured': isFeatured,
+      'is_verified': isVerified,
+      'has_delivery': hasDelivery,
+      'rating_avg': ratingAvg,
+      'rating_count': ratingCount,
+      'views_count': viewsCount,
+      'logo_url': logoUrl,
+      'cover_url': coverUrl,
+      'gallery_urls': galleryUrls,
+      'products_count': productsCount,
+    };
+  }
 }
 
 class CategoryModel {
@@ -110,15 +146,17 @@ class CategoryModel {
   final String icon;
   final int sectionId;
   final int activitiesCount;
+  final bool isFeatured;
 
   CategoryModel({
     required this.id,
     required this.nameAr,
     required this.nameEn,
-    required this.slug,
+    this.slug = '',
     required this.icon,
     required this.sectionId,
     this.activitiesCount = 0,
+    this.isFeatured = false,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -126,10 +164,24 @@ class CategoryModel {
       id: json['id'] ?? 0,
       nameAr: json['name_ar'] ?? '',
       nameEn: json['name_en'] ?? '',
-      slug: json['slug'] ?? '',
+      slug: json['slug'] as String? ?? '',
       icon: json['icon'] ?? 'Tag',
       sectionId: json['section_id'] ?? 1,
       activitiesCount: json['activities_count'] ?? 0,
+      isFeatured: json['is_featured'] ?? json['featured'] ?? false,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name_ar': nameAr,
+      'name_en': nameEn,
+      'slug': slug,
+      'icon': icon,
+      'section_id': sectionId,
+      'activities_count': activitiesCount,
+      'is_featured': isFeatured,
+    };
   }
 }

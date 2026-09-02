@@ -8,6 +8,8 @@ class AppColors {
   
   static const Color secondary = Color(0xFF059669); // Emerald / Success
   static const Color secondaryLight = Color(0xFFECFDF5);
+  static const Color success = Color(0xFF4CAF50);
+  static const Color info = Color(0xFF2196F3);
   
   static const Color accent = Color(0xFFF59E0B); // Amber / Star Rating
   static const Color error = Color(0xFFDC2626); // Rose Red

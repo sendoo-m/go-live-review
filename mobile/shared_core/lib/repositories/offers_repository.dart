@@ -11,8 +11,9 @@ class OffersRepository {
   Future<List<OfferModel>> getMerchantOffers() async {
     try {
       final response = await _apiClient.get(ApiEndpoints.merchantOffers);
-      if (response['success'] == true && response['data'] is List) {
-        return (response['data'] as List)
+      final responseData = response.data as Map<String, dynamic>;
+      if (responseData['success'] == true && responseData['data'] is List) {
+        return (responseData['data'] as List)
             .map((item) => OfferModel.fromJson(item as Map<String, dynamic>))
             .toList();
       }
@@ -21,8 +22,9 @@ class OffersRepository {
       // In case of offline/fallback or error, attempt public offers or return fallback
       try {
         final publicRes = await _apiClient.get(ApiEndpoints.offers);
-        if (publicRes['success'] == true && publicRes['data'] is List) {
-          return (publicRes['data'] as List)
+        final publicData = publicRes.data as Map<String, dynamic>;
+        if (publicData['success'] == true && publicData['data'] is List) {
+          return (publicData['data'] as List)
               .map((item) => OfferModel.fromJson(item as Map<String, dynamic>))
               .toList();
         }
@@ -68,10 +70,11 @@ class OffersRepository {
     };
 
     final response = await _apiClient.post(ApiEndpoints.offers, data: payload);
-    if (response['success'] == true && response['data'] != null) {
-      return OfferModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return OfferModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل إنشاء العرض الترويجي');
+    throw Exception(responseData['message'] ?? 'فشل إنشاء العرض الترويجي');
   }
 
   /// Update an existing offer
@@ -80,18 +83,20 @@ class OffersRepository {
     required Map<String, dynamic> data,
   }) async {
     final response = await _apiClient.put('${ApiEndpoints.offers}/$offerId', data: data);
-    if (response['success'] == true && response['data'] != null) {
-      return OfferModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return OfferModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل تعديل العرض الترويجي');
+    throw Exception(responseData['message'] ?? 'فشل تعديل العرض الترويجي');
   }
 
   /// Toggle offer active status
   Future<bool> toggleOffer(int offerId) async {
     try {
       final response = await _apiClient.patch('${ApiEndpoints.offers}/$offerId/toggle');
-      if (response['success'] == true) {
-        return response['data']?['is_active'] ?? true;
+      final responseData = response.data as Map<String, dynamic>;
+      if (responseData['success'] == true) {
+        return responseData['data']?['is_active'] ?? true;
       }
       return false;
     } catch (e) {
@@ -102,6 +107,7 @@ class OffersRepository {
   /// Delete an offer
   Future<bool> deleteOffer(int offerId) async {
     final response = await _apiClient.delete('${ApiEndpoints.offers}/$offerId');
-    return response['success'] == true;
+    final responseData = response.data as Map<String, dynamic>;
+    return responseData['success'] == true;
   }
 }

@@ -1,7 +1,7 @@
 /// Centralized API Endpoints for Daleel Ay Khidma REST API v2
 class ApiEndpoints {
-  // Base URL - In production, this points to your deployed backend domain
-  static const String baseUrl = 'https://ais-dev-btvvpybazsg3thwohpcxuu-530193892223.europe-west2.run.app/api/v2';
+  // Base URL - Connected to Express / Node backend on port 3000
+  static const String baseUrl = 'http://localhost:3000/api';
   
   // App Initialization & Settings
   static const String appBootstrap = '/app/bootstrap';

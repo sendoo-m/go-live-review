@@ -22,7 +22,7 @@ class FavoriteButton extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final favoritesState = ref.watch(favoritesProvider);
     final isFav = favoritesState.isFavorite(activity.id);
 

@@ -10,8 +10,9 @@ class MerchantProfileRepository {
   /// Get merchant's activities
   Future<List<ActivityModel>> getMerchantActivities() async {
     final response = await _apiClient.get(ApiEndpoints.merchantActivities);
-    if (response['success'] == true && response['data'] is List) {
-      return (response['data'] as List)
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] is List) {
+      return (responseData['data'] as List)
           .map((item) => ActivityModel.fromJson(item as Map<String, dynamic>))
           .toList();
     }
@@ -21,10 +22,11 @@ class MerchantProfileRepository {
   /// Get single activity details for editing
   Future<ActivityModel> getActivityDetails(int activityId) async {
     final response = await _apiClient.get(ApiEndpoints.activityDetails(activityId));
-    if (response['success'] == true && response['data'] != null) {
-      return ActivityModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return ActivityModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل جلب بيانات النشاط التجاري');
+    throw Exception(responseData['message'] ?? 'فشل جلب بيانات النشاط التجاري');
   }
 
   /// Update merchant activity details
@@ -37,9 +39,10 @@ class MerchantProfileRepository {
       data: data,
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      return ActivityModel.fromJson(response['data'] as Map<String, dynamic>);
+    final responseData = response.data as Map<String, dynamic>;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      return ActivityModel.fromJson(responseData['data'] as Map<String, dynamic>);
     }
-    throw Exception(response['message'] ?? 'فشل تحديث بيانات النشاط التجاري');
+    throw Exception(responseData['message'] ?? 'فشل تحديث بيانات النشاط التجاري');
   }
 }

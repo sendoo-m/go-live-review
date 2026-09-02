@@ -355,7 +355,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                             searchState.categories
                                 .firstWhere(
                                   (c) => c.id == searchState.params.categoryId,
-                                  orElse: () => CategoryModel(id: 0, sectionId: 0, nameAr: 'تصنيف', nameEn: '', icon: '', isFeatured: false),
+                                  orElse: () => CategoryModel(id: 0, sectionId: 0, nameAr: 'تصنيف', nameEn: '', icon: '', isFeatured: false, slug: ''),
                                 )
                                 .nameAr,
                             style: const TextStyle(fontSize: 11),

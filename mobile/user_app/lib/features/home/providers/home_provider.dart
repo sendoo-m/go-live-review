@@ -7,6 +7,7 @@ class HomeState {
   final AppBootstrapData? bootstrap;
   final List<ActivityModel> featuredActivities;
   final List<CategoryModel> categories;
+  final List<GovernorateModel> governorates;
   final int? selectedGovernorateId;
   final int? selectedSectionId;
   final String searchQuery;
@@ -17,6 +18,7 @@ class HomeState {
     this.bootstrap,
     this.featuredActivities = const [],
     this.categories = const [],
+    this.governorates = const [],
     this.selectedGovernorateId,
     this.selectedSectionId,
     this.searchQuery = '',
@@ -28,6 +30,7 @@ class HomeState {
     AppBootstrapData? bootstrap,
     List<ActivityModel>? featuredActivities,
     List<CategoryModel>? categories,
+    List<GovernorateModel>? governorates,
     int? selectedGovernorateId,
     int? selectedSectionId,
     String? searchQuery,
@@ -38,6 +41,7 @@ class HomeState {
       bootstrap: bootstrap ?? this.bootstrap,
       featuredActivities: featuredActivities ?? this.featuredActivities,
       categories: categories ?? this.categories,
+      governorates: governorates ?? this.governorates,
       selectedGovernorateId: selectedGovernorateId ?? this.selectedGovernorateId,
       selectedSectionId: selectedSectionId ?? this.selectedSectionId,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -58,8 +62,10 @@ class HomeNotifier extends StateNotifier<HomeState> {
       // 1. Fetch Bootstrap
       final bootstrapRes = await _apiClient.get(ApiEndpoints.appBootstrap);
       AppBootstrapData? bootstrap;
+      List<GovernorateModel> governorates = [];
       if (bootstrapRes.statusCode == 200 && bootstrapRes.data['success'] == true) {
         bootstrap = AppBootstrapData.fromJson(bootstrapRes.data['data']);
+        governorates = bootstrap.governorates;
       }
 
       // 2. Fetch Categories
@@ -91,6 +97,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
         isLoading: false,
         bootstrap: bootstrap,
         categories: categories,
+        governorates: governorates,
         featuredActivities: activities,
         errorMessage: null,
       );
@@ -144,3 +151,5 @@ class HomeNotifier extends StateNotifier<HomeState> {
 final homeNotifierProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
   return HomeNotifier();
 });
+
+final homeProvider = homeNotifierProvider;
