@@ -8,8 +8,18 @@ import '../../../services/notification_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../favorites/presentation/widgets/favorite_button.dart';
 import '../../notifications/providers/notifications_provider.dart';
-import '../../search/providers/search_provider.dart';
 import '../providers/home_provider.dart';
+
+// ─────────────────────────────────────────
+// Brand Gradient — Blue #2563EB → Purple #7C3AED
+// ─────────────────────────────────────────
+const _kBlue   = Color(0xFF2563EB);
+const _kPurple = Color(0xFF7C3AED);
+const _kGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [_kBlue, _kPurple],
+);
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -19,38 +29,38 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _currentNavIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _headerCollapsed = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize notifications and check for incoming notifications
     NotificationService().initialize();
     NotificationService().onForegroundNotification.listen((payload) {
-      if (mounted) {
-        NotificationService().showForegroundBanner(context, payload);
+      if (mounted) NotificationService().showForegroundBanner(context, payload);
+    });
+    _scrollController.addListener(() {
+      final collapsed = _scrollController.offset > 80;
+      if (collapsed != _headerCollapsed) {
+        setState(() => _headerCollapsed = collapsed);
       }
     });
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _handleLogout() async {
-    final shouldLogout = await showDialog<bool>(
+    final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('تسجيل الخروج'),
-        content: const Text('هل أنت متأكد من رغبتك في تسجيل الخروج من التطبيق؟'),
+        content: const Text('هل أنت متأكد من رغبتك في تسجيل الخروج؟'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
@@ -62,563 +72,293 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
-
-    if (shouldLogout == true && mounted) {
+    if (ok == true && mounted) {
       await ref.read(authNotifierProvider.notifier).logout();
-      if (mounted) {
-        context.go(AppRoutes.login);
-      }
+      if (mounted) context.go(AppRoutes.login);
     }
   }
 
-  Future<void> _launchUrlHelper(String urlStr) async {
-    final uri = Uri.parse(urlStr);
+  Future<void> _launchUrlHelper(String url) async {
+    final uri = Uri.parse(url);
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('تعذر فتح الرابط: $urlStr')),
-          );
-        }
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر فتح الرابط: $url')));
       }
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تنفيذ الإجراء: $urlStr')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ الإجراء: $url')));
     }
   }
 
+  // ─── Build ───────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-    final homeState = ref.watch(homeNotifierProvider);
+    final authState  = ref.watch(authNotifierProvider);
+    final homeState  = ref.watch(homeNotifierProvider);
     final homeNotifier = ref.read(homeNotifierProvider.notifier);
 
-    final appName = homeState.bootstrap?.appName ?? AppStrings.appName;
-    final userName = authState.user?.name ?? 'زائر كرام';
+    final appName      = homeState.bootstrap?.appName ?? AppStrings.appName;
+    final userName     = authState.user?.name ?? 'زائر';
     final governorates = homeState.bootstrap?.governorates ?? [];
-    final sections = homeState.bootstrap?.sections ?? [];
+    final sections     = homeState.bootstrap?.sections ?? [];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          children: [
-            Text(
-              appName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+      backgroundColor: const Color(0xFFF4F6FB),
+      // ── Collapsed SliverAppBar ──────────────────────────────────────────
+      body: NestedScrollView(
+        controller: _scrollController,
+        headerSliverBuilder: (context, innerBoxScrolled) => [
+          SliverAppBar(
+            expandedHeight: 170,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCollapsed = constraints.maxHeight <= kToolbarHeight + MediaQuery.of(context).padding.top;
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: isCollapsed
+                        ? const LinearGradient(colors: [_kBlue, _kPurple], begin: Alignment.centerLeft, end: Alignment.centerRight)
+                        : _kGradient,
+                  ),
+                  child: isCollapsed
+                      ? _CollapsedHeader(appName: appName)
+                      : _ExpandedHeader(
+                          appName: appName,
+                          userName: userName,
+                          isAuthenticated: authState.isAuthenticated,
+                        ),
+                );
+              },
             ),
-            if (authState.isAuthenticated)
-              Text(
-                'أهلاً بك، $userName',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              )
-            else
-              const Text(
-                'تصفح واستكشف الخدمات في مصر',
-                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-              ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Consumer(
-              builder: (context, ref, _) {
-                final notifState = ref.watch(notificationsNotifierProvider);
-                if (notifState.unreadCount > 0) {
-                  return Badge(
-                    label: Text('${notifState.unreadCount}'),
-                    child: const Icon(Icons.notifications_outlined),
+            actions: [
+              // Notifications badge
+              Consumer(
+                builder: (ctx, ref, _) {
+                  final notifState = ref.watch(notificationsNotifierProvider);
+                  return IconButton(
+                    icon: notifState.unreadCount > 0
+                        ? Badge(
+                            label: Text('${notifState.unreadCount}'),
+                            child: const Icon(Icons.notifications_outlined, color: Colors.white),
+                          )
+                        : const Icon(Icons.notifications_outlined, color: Colors.white),
+                    tooltip: 'الإشعارات',
+                    onPressed: () => context.push(AppRoutes.notifications),
                   );
-                }
-                return const Icon(Icons.notifications_outlined);
-              },
-            ),
-            tooltip: 'الإشعارات',
-            onPressed: () => context.push(AppRoutes.notifications),
+                },
+              ),
+              // Avatar / account
+              Padding(
+                padding: const EdgeInsets.only(left: 8, right: 4),
+                child: GestureDetector(
+                  onTap: () => _showAccountSheet(authState),
+                  child: CircleAvatar(
+                    radius: 17,
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
+                    child: authState.isAuthenticated
+                        ? Text(
+                            authState.user!.name.isNotEmpty ? authState.user!.name[0].toUpperCase() : 'U',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          )
+                        : const Icon(Icons.person_outline, color: Colors.white, size: 18),
+                  ),
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'الإعدادات',
-            onPressed: () => context.push(AppRoutes.settings),
-          ),
-          if (!authState.isAuthenticated)
-            TextButton.icon(
-              onPressed: () {
-                context.push(AppRoutes.login);
-              },
-              icon: const Icon(Icons.login, size: 18),
-              label: const Text('دخول'),
-            ),
         ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await homeNotifier.loadHomeData(refresh: true);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Search Bar & Location Filter Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          context.push(AppRoutes.search);
+        // ── Scrollable body ────────────────────────────────────────────────
+        body: RefreshIndicator(
+          color: _kBlue,
+          onRefresh: () async => homeNotifier.loadHomeData(refresh: true),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // ── Search Bar ──────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: _GlassSearchBar(
+                    onTap: () => context.push(AppRoutes.search),
+                    onMapTap: () => context.push(AppRoutes.map),
+                  ),
+                ),
+              ),
+
+              // ── Governorate Chips ────────────────────────────────────────
+              if (governorates.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 8),
+                    child: SizedBox(
+                      height: 40,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: governorates.length + 1,
+                        itemBuilder: (context, i) {
+                          if (i == 0) {
+                            return _GovChip(
+                              label: 'كافة المحافظات',
+                              selected: homeState.selectedGovernorateId == null,
+                              onTap: () => homeNotifier.filterByGovernorate(null),
+                            );
+                          }
+                          final gov = governorates[i - 1];
+                          return _GovChip(
+                            label: gov.nameAr,
+                            selected: homeState.selectedGovernorateId == gov.id,
+                            onTap: () => homeNotifier.filterByGovernorate(gov.id),
+                          );
                         },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.search, color: AppColors.primary, size: 22),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'ابحث عن متجر، خدمة، صيانة أو منتج...',
-                                  style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.map_outlined, color: AppColors.primary),
-                        tooltip: 'الخريطة التفاعلية',
-                        onPressed: () => context.push(AppRoutes.map),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 2. Location Filter Chips (Governorates)
-              if (governorates.isNotEmpty) ...[
-                SizedBox(
-                  height: 38,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: governorates.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        final isSelected = homeState.selectedGovernorateId == null;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: FilterChip(
-                            label: const Text('كافة المحافظات'),
-                            selected: isSelected,
-                            selectedColor: AppColors.primaryLight,
-                            checkmarkColor: AppColors.primary,
-                            labelStyle: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                            ),
-                            onSelected: (_) {
-                              homeNotifier.filterByGovernorate(null);
-                            },
-                          ),
-                        );
-                      }
-                      final gov = governorates[index - 1];
-                      final isSelected = homeState.selectedGovernorateId == gov.id;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FilterChip(
-                          label: Text(gov.nameAr),
-                          selected: isSelected,
-                          selectedColor: AppColors.primaryLight,
-                          checkmarkColor: AppColors.primary,
-                          labelStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                          ),
-                          onSelected: (_) {
-                            homeNotifier.filterByGovernorate(gov.id);
-                          },
-                        ),
-                      );
-                    },
                   ),
                 ),
-                const SizedBox(height: 16),
-              ],
 
-              // 3. Sections Carousel
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  AppStrings.browseCategories,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              if (sections.isNotEmpty)
-                SizedBox(
-                  height: 95,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: sections.length,
-                    itemBuilder: (context, index) {
-                      final section = sections[index];
-                      final isSelected = homeState.selectedSectionId == section.id;
-
-                      return GestureDetector(
-                        onTap: () {
-                          homeNotifier.filterBySection(section.id);
-                        },
-                        child: Container(
-                          width: 105,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primaryLight : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected ? AppColors.primary : AppColors.border,
-                              width: isSelected ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _getSectionIcon(section.icon, isSelected ? AppColors.primary : AppColors.textSecondary),
-                              const SizedBox(height: 6),
-                              Text(
-                                section.nameAr,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 24),
-
-              // 4. Featured Activities Section Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      homeState.selectedSectionId != null
-                          ? 'الأنشطة المتاحة في هذا القسم'
-                          : AppStrings.featuredActivities,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      '${homeState.featuredActivities.length} نشاط',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // 5. Activities Content: Loading, Error, Empty, or List
-              if (homeState.isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (homeState.errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+              // ── Sections Carousel ────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                  child: Row(
                     children: [
-                      const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.error),
-                      const SizedBox(height: 12),
-                      Text(
-                        homeState.errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.textSecondary),
+                      // Gradient mini-bar
+                      Container(
+                        width: 4, height: 20,
+                        decoration: BoxDecoration(
+                          gradient: _kGradient,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () => homeNotifier.loadHomeData(refresh: true),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text(AppStrings.retry),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'تصفح حسب القسم',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E1B4B)),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              if (sections.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 108,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: sections.length,
+                      itemBuilder: (ctx, i) {
+                        final s = sections[i];
+                        final selected = homeState.selectedSectionId == s.id;
+                        return _SectionCard(
+                          section: s,
+                          selected: selected,
+                          onTap: () => homeNotifier.filterBySection(s.id),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+              // ── Activities Header ────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 4, height: 20,
+                            decoration: BoxDecoration(
+                              gradient: _kGradient,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            homeState.selectedSectionId != null
+                                ? 'الأنشطة المتاحة'
+                                : AppStrings.featuredActivities,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E1B4B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: _kGradient,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${homeState.featuredActivities.length} نشاط',
+                          style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Activities Content ────────────────────────────────────────
+              if (homeState.isLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: _kBlue),
+                  ),
+                )
+              else if (homeState.errorMessage != null)
+                SliverFillRemaining(
+                  child: _ErrorState(
+                    message: homeState.errorMessage!,
+                    onRetry: () => homeNotifier.loadHomeData(refresh: true),
                   ),
                 )
               else if (homeState.featuredActivities.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.search_off_rounded, size: 48, color: AppColors.textMuted.withOpacity(0.5)),
-                        const SizedBox(height: 12),
-                        const Text(
-                          AppStrings.noResults,
-                          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+                SliverFillRemaining(
+                  child: _EmptyState(),
                 )
               else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: homeState.featuredActivities.length,
-                  itemBuilder: (context, index) {
-                    final activity = homeState.featuredActivities[index];
-                    return _buildActivityCard(activity);
-                  },
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => _ActivityCard(
+                        activity: homeState.featuredActivities[i],
+                        onTap: () => context.push('/activity/${homeState.featuredActivities[i].id}'),
+                        onCall: (phone) => _launchUrlHelper('tel:$phone'),
+                        onWhatsApp: (wa) {
+                          final clean = wa.replaceAll('+', '').replaceAll(' ', '');
+                          _launchUrlHelper('https://wa.me/$clean');
+                        },
+                      ),
+                      childCount: homeState.featuredActivities.length,
+                    ),
+                  ),
                 ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentNavIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textMuted,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
-          if (index == 1) {
-            context.push(AppRoutes.search);
-          } else if (index == 2) {
-            context.push(AppRoutes.map);
-          } else if (index == 3) {
-            context.push(AppRoutes.favorites);
-          } else if (index == 4) {
-            context.push(AppRoutes.profile);
-          }
+
+      // ── Bottom Navigation ───────────────────────────────────────────────
+      bottomNavigationBar: _GradientBottomNav(
+        currentIndex: 0,
+        onTap: (i) {
+          if (i == 1) context.push(AppRoutes.search);
+          else if (i == 2) context.push(AppRoutes.map);
+          else if (i == 3) context.push(AppRoutes.favorites);
+          else if (i == 4) context.push(AppRoutes.profile);
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: AppStrings.navHome),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: AppStrings.navSearch),
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: AppStrings.navMap),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'المفضلة'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: AppStrings.navProfile),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityCard(ActivityModel activity) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          context.push('/activity/${activity.id}');
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Logo / Image
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(10),
-                      image: activity.logoUrl != null && activity.logoUrl!.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(activity.logoUrl!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: activity.logoUrl == null || activity.logoUrl!.isEmpty
-                        ? const Icon(Icons.storefront, color: AppColors.primary, size: 28)
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Main Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                activity.nameAr,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (activity.isVerified) ...[
-                              const SizedBox(width: 4),
-                              const Icon(Icons.verified, size: 16, color: AppColors.primary),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${activity.categoryNameAr ?? 'عام'} • ${activity.governorateNameAr ?? 'مصر'}',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                        ),
-                        if (activity.addressAr != null && activity.addressAr!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            activity.addressAr!,
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  // Rating Badge & Favorite Button
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FavoriteButton(activity: activity),
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondaryLight,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.star, size: 14, color: AppColors.secondary),
-                            const SizedBox(width: 4),
-                            Text(
-                              activity.ratingAvg.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: AppColors.secondary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Divider(height: 1, color: AppColors.border),
-              const SizedBox(height: 10),
-
-              // Action Buttons (Call / WhatsApp)
-              Row(
-                children: [
-                  if (activity.phone != null && activity.phone!.isNotEmpty) ...[
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _launchUrlHelper('tel:${activity.phone}'),
-                        icon: const Icon(Icons.call, size: 16, color: AppColors.primary),
-                        label: const Text(
-                          'اتصال',
-                          style: TextStyle(fontSize: 12, color: AppColors.primary),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          side: const BorderSide(color: AppColors.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (activity.whatsapp != null && activity.whatsapp!.isNotEmpty) ...[
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          final cleanPhone = activity.whatsapp!.replaceAll('+', '').replaceAll(' ', '');
-                          _launchUrlHelper('https://wa.me/$cleanPhone');
-                        },
-                        icon: const Icon(Icons.chat, size: 16, color: Colors.white),
-                        label: const Text(
-                          'واتساب',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF25D366),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -626,101 +366,700 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showAccountSheet(AuthState authState) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Drag handle
             Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
+            // Avatar
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(
+                gradient: _kGradient,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  authState.user?.name.isNotEmpty == true ? authState.user!.name[0].toUpperCase() : 'U',
+                  style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              authState.user?.name ?? 'مستخدم زائر',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            Text(
+              authState.user?.email ?? authState.user?.phone ?? 'غير مسجل الدخول',
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            if (authState.isAuthenticated)
+              ListTile(
+                leading: const Icon(Icons.logout, color: AppColors.error),
+                title: const Text('تسجيل الخروج', style: TextStyle(color: AppColors.error)),
+                onTap: () { Navigator.pop(ctx); _handleLogout(); },
+              )
+            else
+              ListTile(
+                leading: const Icon(Icons.login, color: _kBlue),
+                title: const Text('تسجيل الدخول / إنشاء حساب'),
+                onTap: () { Navigator.pop(ctx); context.push(AppRoutes.login); },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Private Widgets
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Expanded Hero Header ─────────────────────────────────────────
+class _ExpandedHeader extends StatelessWidget {
+  final String appName;
+  final String userName;
+  final bool isAuthenticated;
+  const _ExpandedHeader({required this.appName, required this.userName, required this.isAuthenticated});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.primaryLight,
-                  child: Text(
-                    authState.user?.name.isNotEmpty == true ? authState.user!.name[0] : 'U',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
+                // Dot accent
+                Container(
+                  width: 8, height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        authState.user?.name ?? 'مستخدم زائر',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      Text(
-                        authState.user?.email ?? authState.user?.phone ?? 'غير مسجل الدخول',
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                      ),
-                    ],
+                const SizedBox(width: 8),
+                Text(
+                  appName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            const Divider(),
-            if (authState.isAuthenticated) ...[
-              ListTile(
-                leading: const Icon(Icons.logout, color: AppColors.error),
-                title: const Text('تسجيل الخروج', style: TextStyle(color: AppColors.error)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _handleLogout();
-                },
+            const SizedBox(height: 6),
+            Text(
+              isAuthenticated ? 'أهلاً، $userName 👋' : 'اكتشف الخدمات حولك',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
               ),
-            ] else ...[
-              ListTile(
-                leading: const Icon(Icons.login, color: AppColors.primary),
-                title: const Text('تسجيل الدخول / إنشاء حساب'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push(AppRoutes.login);
-                },
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isAuthenticated
+                  ? 'إيه اللي تدور عليه النهارده؟'
+                  : 'محلات · حرف · خدمات · معلمين · بلوجرز',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.75),
+                fontSize: 13,
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Collapsed Header (title only) ───────────────────────────────
+class _CollapsedHeader extends StatelessWidget {
+  final String appName;
+  const _CollapsedHeader({required this.appName});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            appName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Glass Search Bar ─────────────────────────────────────────────
+class _GlassSearchBar extends StatelessWidget {
+  final VoidCallback onTap;
+  final VoidCallback onMapTap;
+  const _GlassSearchBar({required this.onTap, required this.onMapTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: _kBlue.withValues(alpha: 0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(color: _kBlue.withValues(alpha: 0.15)),
+              ),
+              child: Row(
+                children: [
+                  ShaderMask(
+                    shaderCallback: (b) => _kGradient.createShader(b),
+                    child: const Icon(Icons.search_rounded, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'ابحث عن متجر، خدمة أو منتج...',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Map button — gradient background
+        GestureDetector(
+          onTap: onMapTap,
+          child: Container(
+            width: 50, height: 50,
+            decoration: BoxDecoration(
+              gradient: _kGradient,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _kPurple.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.map_outlined, color: Colors.white, size: 22),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Governorate Filter Chip ───────────────────────────────────────
+class _GovChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _GovChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: selected ? _kGradient : null,
+            color: selected ? null : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? Colors.transparent : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: selected
+                ? [BoxShadow(color: _kPurple.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))]
+                : [],
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+              color: selected ? Colors.white : const Color(0xFF475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Section Card ─────────────────────────────────────────────────
+class _SectionCard extends StatelessWidget {
+  final dynamic section;
+  final bool selected;
+  final VoidCallback onTap;
+  const _SectionCard({required this.section, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 90,
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: selected ? _kGradient : null,
+          color: selected ? null : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? Colors.transparent : const Color(0xFFE2E8F0),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: selected
+                  ? _kPurple.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.05),
+              blurRadius: selected ? 12 : 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _sectionIcon(section.icon, selected ? Colors.white : _kBlue),
+            const SizedBox(height: 6),
+            Text(
+              section.nameAr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : const Color(0xFF334155),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _getSectionIcon(String iconName, Color color) {
+  Widget _sectionIcon(String iconName, Color color) {
     switch (iconName.toLowerCase()) {
-      case 'shopping-bag':
-      case 'store':
-      case 'stores':
-        return Icon(Icons.storefront, color: color, size: 26);
-      case 'wrench':
-      case 'crafts':
-      case 'hammer':
-        return Icon(Icons.build_circle, color: color, size: 26);
-      case 'heart-pulse':
-      case 'doctor':
-      case 'health':
-        return Icon(Icons.local_hospital, color: color, size: 26);
-      case 'graduation-cap':
-      case 'education':
-      case 'school':
-        return Icon(Icons.school, color: color, size: 26);
-      case 'car':
-      case 'truck':
-        return Icon(Icons.directions_car, color: color, size: 26);
+      case 'store': case 'shopping-bag':
+        return Icon(Icons.storefront_rounded, color: color, size: 26);
+      case 'hammer': case 'wrench': case 'crafts':
+        return Icon(Icons.build_circle_rounded, color: color, size: 26);
+      case 'briefcase': case 'services':
+        return Icon(Icons.business_center_rounded, color: color, size: 26);
+      case 'graduationcap': case 'graduation-cap': case 'teachers':
+        return Icon(Icons.school_rounded, color: color, size: 26);
+      case 'sparkles': case 'bloggers':
+        return Icon(Icons.auto_awesome_rounded, color: color, size: 26);
       default:
-        return Icon(Icons.category, color: color, size: 26);
+        return Icon(Icons.category_rounded, color: color, size: 26);
     }
+  }
+}
+
+// ── Activity Card ─────────────────────────────────────────────────
+class _ActivityCard extends StatelessWidget {
+  final ActivityModel activity;
+  final VoidCallback onTap;
+  final Function(String) onCall;
+  final Function(String) onWhatsApp;
+  const _ActivityCard({
+    required this.activity,
+    required this.onTap,
+    required this.onCall,
+    required this.onWhatsApp,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Top row: logo + info + actions
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Logo
+                    Container(
+                      width: 56, height: 56,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: _kGradient,
+                        image: activity.coverImage.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(activity.coverImage),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: activity.coverImage.isEmpty
+                          ? const Icon(Icons.storefront_rounded, color: Colors.white, size: 28)
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  activity.nameAr,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (activity.status == 'verified')
+                                ShaderMask(
+                                  shaderCallback: (b) => _kGradient.createShader(b),
+                                  child: const Icon(Icons.verified_rounded, size: 16, color: Colors.white),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${activity.categoryNameAr ?? 'عام'} · ${activity.governorateNameAr ?? 'مصر'}',
+                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                          ),
+                          if (activity.addressAr.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              activity.addressAr,
+                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    // Rating + Favorite
+                    Column(
+                      children: [
+                        FavoriteButton(activity: activity),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: _kGradient,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, size: 13, color: Colors.white),
+                              const SizedBox(width: 3),
+                              Text(
+                                activity.ratingAvg.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Divider ─────────────────────────────────────────
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+
+              // ── Action Buttons ───────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                child: Row(
+                  children: [
+                    if (activity.phone.isNotEmpty) ...[
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.call_rounded,
+                          label: 'اتصال',
+                          gradient: null,
+                          borderColor: _kBlue.withValues(alpha: 0.3),
+                          textColor: _kBlue,
+                          iconColor: _kBlue,
+                          onTap: () => onCall(activity.phone),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    if (activity.whatsappNumber != null && (activity.whatsappNumber ?? '').isNotEmpty)
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.chat_bubble_rounded,
+                          label: 'واتساب',
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+                          ),
+                          borderColor: Colors.transparent,
+                          textColor: Colors.white,
+                          iconColor: Colors.white,
+                          onTap: () => onWhatsApp(activity.whatsappNumber!),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Action Button ─────────────────────────────────────────────────
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final LinearGradient? gradient;
+  final Color borderColor;
+  final Color textColor;
+  final Color iconColor;
+  final VoidCallback onTap;
+  const _ActionButton({
+    required this.icon, required this.label, required this.gradient,
+    required this.borderColor, required this.textColor,
+    required this.iconColor, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          color: gradient == null ? Colors.white : null,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(fontSize: 13, color: textColor, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Gradient Bottom Nav ───────────────────────────────────────────
+class _GradientBottomNav extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+  const _GradientBottomNav({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.home_rounded, Icons.home_outlined, AppStrings.navHome),
+      (Icons.search_rounded, Icons.search_outlined, AppStrings.navSearch),
+      (Icons.map_rounded, Icons.map_outlined, AppStrings.navMap),
+      (Icons.favorite_rounded, Icons.favorite_border_rounded, 'المفضلة'),
+      (Icons.person_rounded, Icons.person_outline_rounded, AppStrings.navProfile),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: _kPurple.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (i) {
+              final selected = i == currentIndex;
+              return GestureDetector(
+                onTap: () => onTap(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: selected
+                      ? BoxDecoration(
+                          gradient: _kGradient,
+                          borderRadius: BorderRadius.circular(20),
+                        )
+                      : null,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        selected ? items[i].$1 : items[i].$2,
+                        color: selected ? Colors.white : const Color(0xFF94A3B8),
+                        size: 22,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        items[i].$3,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: selected ? Colors.white : const Color(0xFF94A3B8),
+                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Error State ────────────────────────────────────────────────────
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ShaderMask(
+              shaderCallback: (b) => _kGradient.createShader(b),
+              child: const Icon(Icons.wifi_off_rounded, size: 56, color: Colors.white),
+            ),
+            const SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: _kGradient,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Text(AppStrings.retry, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Empty State ────────────────────────────────────────────────────
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ShaderMask(
+            shaderCallback: (b) => _kGradient.createShader(b),
+            child: const Icon(Icons.search_off_rounded, size: 56, color: Colors.white),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            AppStrings.noResults,
+            style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }
