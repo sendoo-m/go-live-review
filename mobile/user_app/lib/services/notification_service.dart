@@ -136,7 +136,7 @@ class NotificationService {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.notifications_active, color: AppColors.primary, size: 20),

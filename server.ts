@@ -2684,15 +2684,19 @@ async function startServer() {
 
   app.use(express.json());
 
-  // CORS for Flutter web and external frontends
+  // CORS for Flutter web and external frontends: allow any localhost/127.0.0.1 port
   app.use(
     cors({
-      origin: [
-        /^http:\/\/localhost(:\d+)?$/,
-        /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-        'http://localhost:*',
-        'http://127.0.0.1:*',
-      ],
+      origin: (origin, callback) => {
+        if (
+          !origin ||
+          /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+          /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)
+        ) {
+          return callback(null, true);
+        }
+        callback(new Error("Not allowed by CORS"));
+      },
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: [
         "Origin",
@@ -8386,6 +8390,17 @@ async function startServer() {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    });
+    // The Flutter build folders under mobile/**/build churn files constantly while
+    // `flutter run` is active, which occasionally wins a race with chokidar's watcher
+    // (EBUSY) even though those paths are excluded in vite.config.ts. An unhandled
+    // 'error' on the watcher is fatal to the whole Node process, so keep it non-fatal.
+    vite.watcher.on("error", (err: NodeJS.ErrnoException) => {
+      if (err?.code === "EBUSY" || err?.code === "EPERM") {
+        console.warn(`[vite] watcher ${err.code} on ${err.path ?? "unknown path"} (ignored)`);
+        return;
+      }
+      console.error("[vite] watcher error:", err);
     });
     app.use(vite.middlewares);
   } else {
