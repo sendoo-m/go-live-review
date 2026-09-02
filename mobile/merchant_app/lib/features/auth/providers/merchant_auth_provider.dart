@@ -32,7 +32,7 @@ class MerchantAuthNotifier extends StateNotifier<AuthState> {
       if (authData != null) {
         state = AuthState.authenticated(authData.user, authData.token);
         AnalyticsService().setUserId(authData.user.id.toString());
-        AnalyticsService().setUserProperty('user_role', authData.user.role);
+        AnalyticsService().setUserProperty('user_role', authData.user.role ?? 'merchant');
         CrashReportingService().setUserIdentifier(
           authData.user.id.toString(),
           role: authData.user.role,
@@ -58,7 +58,7 @@ class MerchantAuthNotifier extends StateNotifier<AuthState> {
       state = AuthState.authenticated(authData.user, authData.token);
       
       AnalyticsService().setUserId(authData.user.id.toString());
-      AnalyticsService().setUserProperty('user_role', authData.user.role);
+      AnalyticsService().setUserProperty('user_role', authData.user.role ?? 'merchant');
       AnalyticsService().logEvent(AnalyticsEvents.loginSuccess, parameters: {
         'role': authData.user.role,
         'portal': 'merchant',

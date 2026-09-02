@@ -750,14 +750,14 @@ class _ActivityCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
                         gradient: _kGradient,
-                        image: activity.coverImage.isNotEmpty
+                        image: (activity.coverUrl ?? '').isNotEmpty
                             ? DecorationImage(
-                                image: NetworkImage(activity.coverImage),
+                                image: NetworkImage(activity.coverUrl!),
                                 fit: BoxFit.cover,
                               )
                             : null,
                       ),
-                      child: activity.coverImage.isEmpty
+                      child: (activity.coverUrl ?? '').isEmpty
                           ? const Icon(Icons.storefront_rounded, color: Colors.white, size: 28)
                           : null,
                     ),
@@ -794,10 +794,10 @@ class _ActivityCard extends StatelessWidget {
                             '${activity.categoryNameAr ?? 'عام'} · ${activity.governorateNameAr ?? 'مصر'}',
                             style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                           ),
-                          if (activity.addressAr.isNotEmpty) ...[
+                          if ((activity.addressAr ?? '').isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text(
-                              activity.addressAr,
+                              activity.addressAr!,
                               style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -848,7 +848,7 @@ class _ActivityCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                 child: Row(
                   children: [
-                    if (activity.phone.isNotEmpty) ...[
+                    if ((activity.phone ?? '').isNotEmpty) ...[
                       Expanded(
                         child: _ActionButton(
                           icon: Icons.call_rounded,
@@ -857,12 +857,12 @@ class _ActivityCard extends StatelessWidget {
                           borderColor: _kBlue.withValues(alpha: 0.3),
                           textColor: _kBlue,
                           iconColor: _kBlue,
-                          onTap: () => onCall(activity.phone),
+                          onTap: () => onCall(activity.phone!),
                         ),
                       ),
                       const SizedBox(width: 10),
                     ],
-                    if (activity.whatsappNumber != null && (activity.whatsappNumber ?? '').isNotEmpty)
+                    if ((activity.whatsapp ?? '').isNotEmpty)
                       Expanded(
                         child: _ActionButton(
                           icon: Icons.chat_bubble_rounded,
@@ -873,7 +873,7 @@ class _ActivityCard extends StatelessWidget {
                           borderColor: Colors.transparent,
                           textColor: Colors.white,
                           iconColor: Colors.white,
-                          onTap: () => onWhatsApp(activity.whatsappNumber!),
+                          onTap: () => onWhatsApp(activity.whatsapp!),
                         ),
                       ),
                   ],

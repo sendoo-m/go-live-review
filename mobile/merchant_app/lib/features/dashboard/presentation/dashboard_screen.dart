@@ -559,6 +559,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required String subtitle,
     required Color color,
     required VoidCallback onTap,
+    String? badge,
   }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -576,7 +577,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (badge != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+            const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+          ],
+        ),
       ),
     );
   }

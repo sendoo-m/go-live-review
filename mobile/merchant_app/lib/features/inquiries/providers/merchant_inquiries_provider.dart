@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_core/models/inquiry_model.dart';
-import 'package:shared_core/repositories/inquiries_repository.dart';
+import 'package:daleel_core/models/inquiry_model.dart';
+import 'package:daleel_core/repositories/inquiries_repository.dart';
 
 class InquiriesState {
   final List<InquiryModel> inquiries;

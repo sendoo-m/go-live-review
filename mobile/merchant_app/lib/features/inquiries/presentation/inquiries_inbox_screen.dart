@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_core/models/inquiry_model.dart';
-import 'package:shared_core/theme/app_colors.dart';
+import 'package:daleel_core/models/inquiry_model.dart';
+import 'package:daleel_core/theme/app_colors.dart';
 import '../providers/merchant_inquiries_provider.dart';
 
 class InquiriesInboxScreen extends ConsumerStatefulWidget {
