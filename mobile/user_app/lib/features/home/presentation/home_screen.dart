@@ -10,16 +10,13 @@ import '../../favorites/presentation/widgets/favorite_button.dart';
 import '../../notifications/providers/notifications_provider.dart';
 import '../providers/home_provider.dart';
 
-// ─────────────────────────────────────────
-// Brand Gradient — Blue #2563EB → Purple #7C3AED
-// ─────────────────────────────────────────
-const _kBlue   = Color(0xFF2563EB);
-const _kPurple = Color(0xFF7C3AED);
-const _kGradient = LinearGradient(
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-  colors: [_kBlue, _kPurple],
-);
+// ─────────────────────────────────────────────────────────────────
+// Convenience aliases — single source of truth from AppColors
+// ─────────────────────────────────────────────────────────────────
+const _kBlue     = AppColors.primary;
+const _kPurple   = AppColors.accent;
+const _kGradient = AppColors.brandGradient;
+const _kHero     = AppColors.heroGradient;
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -84,18 +81,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر فتح الرابط: $url')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تعذر فتح الرابط: $url')),
+          );
+        }
       }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ الإجراء: $url')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تنفيذ الإجراء: $url')),
+        );
+      }
     }
   }
 
-  // ─── Build ───────────────────────────────────────────────────────────────
+  // ─── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final authState  = ref.watch(authNotifierProvider);
-    final homeState  = ref.watch(homeNotifierProvider);
+    final authState    = ref.watch(authNotifierProvider);
+    final homeState    = ref.watch(homeNotifierProvider);
     final homeNotifier = ref.read(homeNotifierProvider.notifier);
 
     final appName      = homeState.bootstrap?.appName ?? AppStrings.appName;
@@ -104,8 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final sections     = homeState.bootstrap?.sections ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FB),
-      // ── Collapsed SliverAppBar ──────────────────────────────────────────
+      backgroundColor: AppColors.background,
       body: NestedScrollView(
         controller: _scrollController,
         headerSliverBuilder: (context, innerBoxScrolled) => [
@@ -117,12 +121,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             backgroundColor: Colors.transparent,
             flexibleSpace: LayoutBuilder(
               builder: (context, constraints) {
-                final isCollapsed = constraints.maxHeight <= kToolbarHeight + MediaQuery.of(context).padding.top;
+                final isCollapsed = constraints.maxHeight <=
+                    kToolbarHeight + MediaQuery.of(context).padding.top;
                 return Container(
                   decoration: BoxDecoration(
-                    gradient: isCollapsed
-                        ? const LinearGradient(colors: [_kBlue, _kPurple], begin: Alignment.centerLeft, end: Alignment.centerRight)
-                        : _kGradient,
+                    gradient: isCollapsed ? AppColors.brandGradient : _kHero,
                   ),
                   child: isCollapsed
                       ? _CollapsedHeader(appName: appName)
@@ -139,32 +142,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Consumer(
                 builder: (ctx, ref, _) {
                   final notifState = ref.watch(notificationsNotifierProvider);
-                  return IconButton(
-                    icon: notifState.unreadCount > 0
-                        ? Badge(
-                            label: Text('${notifState.unreadCount}'),
-                            child: const Icon(Icons.notifications_outlined, color: Colors.white),
-                          )
-                        : const Icon(Icons.notifications_outlined, color: Colors.white),
-                    tooltip: 'الإشعارات',
-                    onPressed: () => context.push(AppRoutes.notifications),
+                  return Semantics(
+                    label: 'الإشعارات${notifState.unreadCount > 0 ? "، ${notifState.unreadCount} غير مقروء" : ""}',
+                    button: true,
+                    child: IconButton(
+                      icon: notifState.unreadCount > 0
+                          ? Badge(
+                              label: Text('${notifState.unreadCount}'),
+                              child: const Icon(
+                                Icons.notifications_outlined,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.white,
+                            ),
+                      tooltip: 'الإشعارات',
+                      onPressed: () => context.push(AppRoutes.notifications),
+                    ),
                   );
                 },
               ),
               // Avatar / account
               Padding(
                 padding: const EdgeInsets.only(left: 8, right: 4),
-                child: GestureDetector(
-                  onTap: () => _showAccountSheet(authState),
-                  child: CircleAvatar(
-                    radius: 17,
-                    backgroundColor: Colors.white.withValues(alpha: 0.25),
-                    child: authState.isAuthenticated
-                        ? Text(
-                            authState.user!.name.isNotEmpty ? authState.user!.name[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                          )
-                        : const Icon(Icons.person_outline, color: Colors.white, size: 18),
+                child: Semantics(
+                  label: 'الحساب الشخصي',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: () => _showAccountSheet(authState),
+                    child: CircleAvatar(
+                      radius: 17,
+                      backgroundColor: Colors.white.withValues(alpha: 0.25),
+                      child: authState.isAuthenticated
+                          ? Text(
+                              authState.user!.name.isNotEmpty
+                                  ? authState.user!.name[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person_outline,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                    ),
                   ),
                 ),
               ),
@@ -173,7 +200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
         // ── Scrollable body ────────────────────────────────────────────────
         body: RefreshIndicator(
-          color: _kBlue,
+          color: AppColors.primary,
           onRefresh: () async => homeNotifier.loadHomeData(refresh: true),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -220,29 +247,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
 
-              // ── Sections Carousel ────────────────────────────────────────
+              // ── Sections Header ──────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                   child: Row(
                     children: [
-                      // Gradient mini-bar
                       Container(
-                        width: 4, height: 20,
+                        width: 4,
+                        height: 20,
                         decoration: BoxDecoration(
-                          gradient: _kGradient,
+                          gradient: AppColors.brandGradient,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                       const SizedBox(width: 8),
                       const Text(
                         'تصفح حسب القسم',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E1B4B)),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E1B4B),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
+
+              // ── Sections Carousel ────────────────────────────────────────
               if (sections.isNotEmpty)
                 SliverToBoxAdapter(
                   child: SizedBox(
@@ -274,9 +307,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Row(
                         children: [
                           Container(
-                            width: 4, height: 20,
+                            width: 4,
+                            height: 20,
                             decoration: BoxDecoration(
-                              gradient: _kGradient,
+                              gradient: AppColors.brandGradient,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -294,14 +328,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          gradient: _kGradient,
+                          gradient: AppColors.brandGradient,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           '${homeState.featuredActivities.length} نشاط',
-                          style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -311,9 +350,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // ── Activities Content ────────────────────────────────────────
               if (homeState.isLoading)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(color: _kBlue),
+                // ✨ Skeleton shimmer instead of plain spinner
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, __) => const _SkeletonCard(),
+                      childCount: 4,
+                    ),
                   ),
                 )
               else if (homeState.errorMessage != null)
@@ -324,9 +368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 )
               else if (homeState.featuredActivities.isEmpty)
-                SliverFillRemaining(
-                  child: _EmptyState(),
-                )
+                SliverFillRemaining(child: _EmptyState())
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -334,10 +376,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) => _ActivityCard(
                         activity: homeState.featuredActivities[i],
-                        onTap: () => context.push('/activity/${homeState.featuredActivities[i].id}'),
+                        onTap: () => context.push(
+                            '/activity/${homeState.featuredActivities[i].id}'),
                         onCall: (phone) => _launchUrlHelper('tel:$phone'),
                         onWhatsApp: (wa) {
-                          final clean = wa.replaceAll('+', '').replaceAll(' ', '');
+                          final clean =
+                              wa.replaceAll('+', '').replaceAll(' ', '');
                           _launchUrlHelper('https://wa.me/$clean');
                         },
                       ),
@@ -350,7 +394,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
 
-      // ── Bottom Navigation ───────────────────────────────────────────────
+      // ── Bottom Navigation ─────────────────────────────────────────────────
       bottomNavigationBar: _GradientBottomNav(
         currentIndex: 0,
         onTap: (i) {
@@ -366,30 +410,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showAccountSheet(AuthState authState) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       backgroundColor: Colors.white,
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             const SizedBox(height: 20),
-            // Avatar
             Container(
-              width: 64, height: 64,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
-                gradient: _kGradient,
+                gradient: AppColors.brandGradient,
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
-                  authState.user?.name.isNotEmpty == true ? authState.user!.name[0].toUpperCase() : 'U',
-                  style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                  authState.user?.name.isNotEmpty == true
+                      ? authState.user!.name[0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -399,22 +453,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             Text(
-              authState.user?.email ?? authState.user?.phone ?? 'غير مسجل الدخول',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              authState.user?.email ??
+                  authState.user?.phone ??
+                  'غير مسجل الدخول',
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 24),
             const Divider(),
             if (authState.isAuthenticated)
               ListTile(
                 leading: const Icon(Icons.logout, color: AppColors.error),
-                title: const Text('تسجيل الخروج', style: TextStyle(color: AppColors.error)),
-                onTap: () { Navigator.pop(ctx); _handleLogout(); },
+                title: const Text('تسجيل الخروج',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleLogout();
+                },
               )
             else
               ListTile(
-                leading: const Icon(Icons.login, color: _kBlue),
+                leading:
+                    const Icon(Icons.login, color: AppColors.primary),
                 title: const Text('تسجيل الدخول / إنشاء حساب'),
-                onTap: () { Navigator.pop(ctx); context.push(AppRoutes.login); },
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.push(AppRoutes.login);
+                },
               ),
           ],
         ),
@@ -427,12 +492,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 // Private Widgets
 // ═══════════════════════════════════════════════════════════════════
 
-// ── Expanded Hero Header ─────────────────────────────────────────
+// ── Expanded Hero Header ───────────────────────────────────────────
 class _ExpandedHeader extends StatelessWidget {
   final String appName;
   final String userName;
   final bool isAuthenticated;
-  const _ExpandedHeader({required this.appName, required this.userName, required this.isAuthenticated});
+  const _ExpandedHeader({
+    required this.appName,
+    required this.userName,
+    required this.isAuthenticated,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -445,9 +514,9 @@ class _ExpandedHeader extends StatelessWidget {
           children: [
             Row(
               children: [
-                // Dot accent
                 Container(
-                  width: 8, height: 8,
+                  width: 8,
+                  height: 8,
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -492,7 +561,7 @@ class _ExpandedHeader extends StatelessWidget {
   }
 }
 
-// ── Collapsed Header (title only) ───────────────────────────────
+// ── Collapsed Header ───────────────────────────────────────────────
 class _CollapsedHeader extends StatelessWidget {
   final String appName;
   const _CollapsedHeader({required this.appName});
@@ -518,7 +587,7 @@ class _CollapsedHeader extends StatelessWidget {
   }
 }
 
-// ── Glass Search Bar ─────────────────────────────────────────────
+// ── Glass Search Bar ───────────────────────────────────────────────
 class _GlassSearchBar extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onMapTap;
@@ -529,60 +598,73 @@ class _GlassSearchBar extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: _kBlue.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(color: _kBlue.withValues(alpha: 0.15)),
-              ),
-              child: Row(
-                children: [
-                  ShaderMask(
-                    shaderCallback: (b) => _kGradient.createShader(b),
-                    child: const Icon(Icons.search_rounded, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'ابحث عن متجر، خدمة أو منتج...',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+          child: Semantics(
+            label: 'البحث عن متجر أو خدمة',
+            button: true,
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.glowBlue,
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
+                  ],
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
                   ),
-                ],
+                ),
+                child: Row(
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (b) => AppColors.brandGradient.createShader(b),
+                      child: const Icon(Icons.search_rounded,
+                          color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'ابحث عن متجر، خدمة أو منتج...',
+                        style: TextStyle(
+                            fontSize: 13, color: AppColors.textMuted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(width: 10),
-        // Map button — gradient background
-        GestureDetector(
-          onTap: onMapTap,
-          child: Container(
-            width: 50, height: 50,
-            decoration: BoxDecoration(
-              gradient: _kGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: _kPurple.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        Semantics(
+          label: 'عرض الخريطة',
+          button: true,
+          child: GestureDetector(
+            onTap: onMapTap,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: AppColors.brandGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.glowPurple,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.map_outlined,
+                  color: Colors.white, size: 22),
             ),
-            child: const Icon(Icons.map_outlined, color: Colors.white, size: 22),
           ),
         ),
       ],
@@ -590,39 +672,57 @@ class _GlassSearchBar extends StatelessWidget {
   }
 }
 
-// ── Governorate Filter Chip ───────────────────────────────────────
+// ── Governorate Chip ───────────────────────────────────────────────
 class _GovChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _GovChip({required this.label, required this.selected, required this.onTap});
+  const _GovChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: selected ? _kGradient : null,
-            color: selected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? Colors.transparent : const Color(0xFFE2E8F0),
+      child: Semantics(
+        label: label,
+        selected: selected,
+        button: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: selected ? AppColors.brandGradient : null,
+              color: selected ? null : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: selected
+                    ? Colors.transparent
+                    : AppColors.border,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.glowPurple,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  : [],
             ),
-            boxShadow: selected
-                ? [BoxShadow(color: _kPurple.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))]
-                : [],
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-              color: selected ? Colors.white : const Color(0xFF475569),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight:
+                    selected ? FontWeight.bold : FontWeight.w500,
+                color: selected ? Colors.white : AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -631,56 +731,70 @@ class _GovChip extends StatelessWidget {
   }
 }
 
-// ── Section Card ─────────────────────────────────────────────────
+// ── Section Card ───────────────────────────────────────────────────
 class _SectionCard extends StatelessWidget {
   final dynamic section;
   final bool selected;
   final VoidCallback onTap;
-  const _SectionCard({required this.section, required this.selected, required this.onTap});
+  const _SectionCard({
+    required this.section,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 90,
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          gradient: selected ? _kGradient : null,
-          color: selected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? Colors.transparent : const Color(0xFFE2E8F0),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: selected
-                  ? _kPurple.withValues(alpha: 0.3)
-                  : Colors.black.withValues(alpha: 0.05),
-              blurRadius: selected ? 12 : 6,
-              offset: const Offset(0, 3),
+    return Semantics(
+      label: section.nameAr,
+      selected: selected,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 90,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            gradient: selected ? AppColors.brandGradient : null,
+            color: selected ? null : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? Colors.transparent : AppColors.border,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _sectionIcon(section.icon, selected ? Colors.white : _kBlue),
-            const SizedBox(height: 6),
-            Text(
-              section.nameAr,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF334155),
+            boxShadow: [
+              BoxShadow(
+                color: selected
+                    ? AppColors.glowPurple
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: selected ? 12 : 6,
+                offset: const Offset(0, 3),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _sectionIcon(
+                section.icon,
+                selected ? Colors.white : AppColors.primary,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                section.nameAr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: selected
+                      ? Colors.white
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -688,15 +802,22 @@ class _SectionCard extends StatelessWidget {
 
   Widget _sectionIcon(String iconName, Color color) {
     switch (iconName.toLowerCase()) {
-      case 'store': case 'shopping-bag':
+      case 'store':
+      case 'shopping-bag':
         return Icon(Icons.storefront_rounded, color: color, size: 26);
-      case 'hammer': case 'wrench': case 'crafts':
+      case 'hammer':
+      case 'wrench':
+      case 'crafts':
         return Icon(Icons.build_circle_rounded, color: color, size: 26);
-      case 'briefcase': case 'services':
+      case 'briefcase':
+      case 'services':
         return Icon(Icons.business_center_rounded, color: color, size: 26);
-      case 'graduationcap': case 'graduation-cap': case 'teachers':
+      case 'graduationcap':
+      case 'graduation-cap':
+      case 'teachers':
         return Icon(Icons.school_rounded, color: color, size: 26);
-      case 'sparkles': case 'bloggers':
+      case 'sparkles':
+      case 'bloggers':
         return Icon(Icons.auto_awesome_rounded, color: color, size: 26);
       default:
         return Icon(Icons.category_rounded, color: color, size: 26);
@@ -704,7 +825,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ── Activity Card ─────────────────────────────────────────────────
+// ── Activity Card ──────────────────────────────────────────────────
 class _ActivityCard extends StatelessWidget {
   final ActivityModel activity;
   final VoidCallback onTap;
@@ -719,167 +840,193 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
+    return Semantics(
+      label: '${activity.nameAr}، ${activity.categoryNameAr ?? "عام"}، ${activity.governorateNameAr ?? "مصر"}',
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+            splashColor: AppColors.primaryLight,
+            highlightColor: AppColors.brandGradientSubtle.colors.first
+                .withValues(alpha: 0.3),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppColors.cardShadow,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Top row: logo + info + actions
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Logo
-                    Container(
-                      width: 56, height: 56,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        gradient: _kGradient,
-                        image: (activity.coverUrl ?? '').isNotEmpty
-                            ? DecorationImage(
-                                image: NetworkImage(activity.coverUrl!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: (activity.coverUrl ?? '').isEmpty
-                          ? const Icon(Icons.storefront_rounded, color: Colors.white, size: 28)
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Top row ────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Logo
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: AppColors.brandGradient,
+                            image: (activity.coverUrl ?? '').isNotEmpty
+                                ? DecorationImage(
+                                    image:
+                                        NetworkImage(activity.coverUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: (activity.coverUrl ?? '').isEmpty
+                              ? const Icon(Icons.storefront_rounded,
+                                  color: Colors.white, size: 28)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
 
-                    // Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  activity.nameAr,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: Color(0xFF1E293B),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      activity.nameAr,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
+                                  if (activity.status == 'verified')
+                                    ShaderMask(
+                                      shaderCallback: (b) =>
+                                          AppColors.brandGradient
+                                              .createShader(b),
+                                      child: const Icon(
+                                          Icons.verified_rounded,
+                                          size: 16,
+                                          color: Colors.white),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${activity.categoryNameAr ?? "عام"} · ${activity.governorateNameAr ?? "مصر"}',
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12),
+                              ),
+                              if ((activity.addressAr ?? '').isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  activity.addressAr!,
+                                  style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 11),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              if (activity.status == 'verified')
-                                ShaderMask(
-                                  shaderCallback: (b) => _kGradient.createShader(b),
-                                  child: const Icon(Icons.verified_rounded, size: 16, color: Colors.white),
-                                ),
+                              ],
                             ],
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${activity.categoryNameAr ?? 'عام'} · ${activity.governorateNameAr ?? 'مصر'}',
-                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                          ),
-                          if ((activity.addressAr ?? '').isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              activity.addressAr!,
-                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        ),
+
+                        // Rating + Favorite
+                        Column(
+                          children: [
+                            FavoriteButton(activity: activity),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: AppColors.brandGradient,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.star_rounded,
+                                      size: 13, color: Colors.white),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    activity.ratingAvg.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
-                        ],
-                      ),
-                    ),
-
-                    // Rating + Favorite
-                    Column(
-                      children: [
-                        FavoriteButton(activity: activity),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            gradient: _kGradient,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star_rounded, size: 13, color: Colors.white),
-                              const SizedBox(width: 3),
-                              Text(
-                                activity.ratingAvg.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // ── Divider ─────────────────────────────────────────
-              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                  // ── Divider ────────────────────────────────────────
+                  const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.surfaceElevated),
 
-              // ── Action Buttons ───────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-                child: Row(
-                  children: [
-                    if ((activity.phone ?? '').isNotEmpty) ...[
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.call_rounded,
-                          label: 'اتصال',
-                          gradient: null,
-                          borderColor: _kBlue.withValues(alpha: 0.3),
-                          textColor: _kBlue,
-                          iconColor: _kBlue,
-                          onTap: () => onCall(activity.phone!),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                    if ((activity.whatsapp ?? '').isNotEmpty)
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.chat_bubble_rounded,
-                          label: 'واتساب',
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+                  // ── Action Buttons ─────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                    child: Row(
+                      children: [
+                        if ((activity.phone ?? '').isNotEmpty) ...[
+                          Expanded(
+                            child: _ActionButton(
+                              icon: Icons.call_rounded,
+                              label: 'اتصال',
+                              gradient: null,
+                              borderColor: AppColors.primary
+                                  .withValues(alpha: 0.3),
+                              textColor: AppColors.primary,
+                              iconColor: AppColors.primary,
+                              onTap: () => onCall(activity.phone!),
+                            ),
                           ),
-                          borderColor: Colors.transparent,
-                          textColor: Colors.white,
-                          iconColor: Colors.white,
-                          onTap: () => onWhatsApp(activity.whatsapp!),
-                        ),
-                      ),
-                  ],
-                ),
+                          const SizedBox(width: 10),
+                        ],
+                        if ((activity.whatsapp ?? '').isNotEmpty)
+                          Expanded(
+                            child: _ActionButton(
+                              icon: Icons.chat_bubble_rounded,
+                              label: 'واتساب',
+                              gradient: const LinearGradient(
+                                colors: [
+                                  AppColors.whatsapp,
+                                  AppColors.whatsappDark,
+                                ],
+                              ),
+                              borderColor: Colors.transparent,
+                              textColor: Colors.white,
+                              iconColor: Colors.white,
+                              onTap: () => onWhatsApp(activity.whatsapp!),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -887,7 +1034,7 @@ class _ActivityCard extends StatelessWidget {
   }
 }
 
-// ── Action Button ─────────────────────────────────────────────────
+// ── Action Button ──────────────────────────────────────────────────
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -897,41 +1044,170 @@ class _ActionButton extends StatelessWidget {
   final Color iconColor;
   final VoidCallback onTap;
   const _ActionButton({
-    required this.icon, required this.label, required this.gradient,
-    required this.borderColor, required this.textColor,
-    required this.iconColor, required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.gradient,
+    required this.borderColor,
+    required this.textColor,
+    required this.iconColor,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          color: gradient == null ? Colors.white : null,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(fontSize: 13, color: textColor, fontWeight: FontWeight.w600)),
-          ],
+    return Semantics(
+      label: label,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            color: gradient == null ? Colors.white : null,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Gradient Bottom Nav ───────────────────────────────────────────
+// ── ✨ Skeleton Card (shimmer loading) ─────────────────────────────
+class _SkeletonCard extends StatefulWidget {
+  const _SkeletonCard();
+
+  @override
+  State<_SkeletonCard> createState() => _SkeletonCardState();
+}
+
+class _SkeletonCardState extends State<_SkeletonCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        final shimmer = Color.lerp(
+          AppColors.surfaceElevated,
+          AppColors.border,
+          _anim.value,
+        )!;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: AppColors.cardShadow,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Logo placeholder
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: shimmer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text lines
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 14,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: shimmer,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 12,
+                      width: 140,
+                      decoration: BoxDecoration(
+                        color: shimmer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 10,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        color: shimmer,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Rating placeholder
+              Container(
+                width: 44,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: shimmer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Gradient Bottom Nav ────────────────────────────────────────────
 class _GradientBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
-  const _GradientBottomNav({required this.currentIndex, required this.onTap});
+  const _GradientBottomNav({
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -948,7 +1224,7 @@ class _GradientBottomNav extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: _kPurple.withValues(alpha: 0.1),
+            color: AppColors.glowPurple,
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -961,35 +1237,47 @@ class _GradientBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(items.length, (i) {
               final selected = i == currentIndex;
-              return GestureDetector(
-                onTap: () => onTap(i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: selected
-                      ? BoxDecoration(
-                          gradient: _kGradient,
-                          borderRadius: BorderRadius.circular(20),
-                        )
-                      : null,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        selected ? items[i].$1 : items[i].$2,
-                        color: selected ? Colors.white : const Color(0xFF94A3B8),
-                        size: 22,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        items[i].$3,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: selected ? Colors.white : const Color(0xFF94A3B8),
-                          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              return Semantics(
+                label: items[i].$3,
+                selected: selected,
+                button: true,
+                child: GestureDetector(
+                  onTap: () => onTap(i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 6),
+                    decoration: selected
+                        ? BoxDecoration(
+                            gradient: AppColors.brandGradient,
+                            borderRadius: BorderRadius.circular(20),
+                          )
+                        : null,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          selected ? items[i].$1 : items[i].$2,
+                          color: selected
+                              ? Colors.white
+                              : AppColors.textMuted,
+                          size: 22,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          items[i].$3,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: selected
+                                ? Colors.white
+                                : AppColors.textMuted,
+                            fontWeight: selected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -1016,21 +1304,30 @@ class _ErrorState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ShaderMask(
-              shaderCallback: (b) => _kGradient.createShader(b),
-              child: const Icon(Icons.wifi_off_rounded, size: 56, color: Colors.white),
+              shaderCallback: (b) =>
+                  AppColors.brandGradient.createShader(b),
+              child: const Icon(Icons.wifi_off_rounded,
+                  size: 56, color: Colors.white),
             ),
             const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 14),
+            ),
             const SizedBox(height: 20),
             GestureDetector(
               onTap: onRetry,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: _kGradient,
-                  borderRadius: BorderRadius.circular(14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 12),
+                decoration: AppColors.brandBoxDecorationRounded(radius: 14),
+                child: const Text(
+                  AppStrings.retry,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
-                child: const Text(AppStrings.retry, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -1049,13 +1346,16 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ShaderMask(
-            shaderCallback: (b) => _kGradient.createShader(b),
-            child: const Icon(Icons.search_off_rounded, size: 56, color: Colors.white),
+            shaderCallback: (b) =>
+                AppColors.brandGradient.createShader(b),
+            child: const Icon(Icons.search_off_rounded,
+                size: 56, color: Colors.white),
           ),
           const SizedBox(height: 16),
           const Text(
             AppStrings.noResults,
-            style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            style: TextStyle(
+                fontSize: 14, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],
