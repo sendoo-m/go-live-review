@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>دليل أي خدمة</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.daleel.aykhidma.user</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>daleel_user_app</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+
+	<!-- Privacy Permissions Strings -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج موقعك الجغرافي لعرض الأنشطة والخدمات والمتاجر القريبة منك على الخريطة وتسهيل الوصول إليها.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج موقعك الجغرافي لعرض الأنشطة والخدمات القريبة منك وتحديث النتائج الميدانية.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>نحتاج إذن الكاميرا لرفع صورة الحساب الشخصي أو إرفاق صور التقييمات.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>نحتاج الوصول لمكتبة الصور لاختيار وتحديث صورة الملف الشخصي ومشاركة الصور في التقييمات.</string>
+
+	<!-- Deep Linking Custom URL Scheme -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.daleel.aykhidma.user</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>daleel</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- Whitelisted External App Schemes for CanLaunchUrl -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>whatsapp</string>
+		<string>comgooglemaps</string>
+		<string>maps</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+</dict>
+</plist>

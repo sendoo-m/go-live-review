@@ -1,0 +1,7 @@
+{
+  "name": "دليل أي خدمة - Laravel 11 Backend & Web Apps Platform",
+  "description": "منظومة متكاملة لدليل أي خدمة تضم واجهة المستخدم النهائي ولوحة إدارة المنصة ولوحة تحكم التجار ومقدمي الخدمات، مع دعم الخرائط والمواقع الجغرافية الدقيقة، كتالوج المنتجات والأسعار، بنية تخزين ورفع الوسائط عبر Cloudflare R2 بدومين مخصص، قسم العروض والخصومات، ونظام الاشتراكات وباقات الأسعار.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

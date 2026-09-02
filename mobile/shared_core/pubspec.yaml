@@ -1,0 +1,21 @@
+name: daleel_core
+description: Core shared models, networking, theme, and localization package for Daleel Ay Khidma Flutter Apps
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0

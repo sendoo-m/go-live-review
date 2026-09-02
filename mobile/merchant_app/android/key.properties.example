@@ -1,0 +1,8 @@
+# Android Release Signing Configuration Example for Daleel Merchant App
+# Copy this file to `mobile/merchant_app/android/key.properties` and fill in your secure credentials
+# NEVER commit key.properties or .jks keystore files into version control
+
+storePassword=YOUR_KEYSTORE_PASSWORD_HERE
+keyPassword=YOUR_KEY_PASSWORD_HERE
+keyAlias=daleel-merchant-release
+storeFile=../keystores/daleel_merchant_release.jks
