@@ -75,6 +75,11 @@ class AppColors {
   static const Color info            = Color(0xFF0EA5E9); // Sky 500
   static const Color infoLight       = Color(0xFFF0F9FF); // Sky 50
 
+  /// @deprecated legacy alias kept for existing screens — same value as [success]
+  static const Color secondary       = Color(0xFF059669);
+  /// @deprecated legacy alias kept for existing screens — same value as [successLight]
+  static const Color secondaryLight  = Color(0xFFECFDF5);
+
   // ─────────────────────────────────────────
   // ⚫ NEUTRALS — Light Mode (WCAG AA)
   // ─────────────────────────────────────────
@@ -90,6 +95,9 @@ class AppColors {
   static const Color textMuted       = Color(0xFF94A3B8); // Slate 400
   static const Color textDisabled    = Color(0xFFCBD5E1); // Slate 300
   static const Color textInverse     = Color(0xFFFFFFFF); // White
+
+  /// @deprecated legacy alias kept for existing screens (e.g. splash background)
+  static const Color surfaceDark     = Color(0xFF1E293B); // Slate 800
 
   // ─────────────────────────────────────────
   // 🌙 DARK MODE SURFACES
