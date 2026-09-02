@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:daleel_core/daleel_core.dart';
 import '../../../config/routes.dart';
 import '../providers/auth_provider.dart';
+import 'login_screen.dart' show _inputDeco, _GradientLabel, _GradientButton;
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -13,246 +14,278 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  int? _selectedGovernorateId = 1; // Default Cairo
-  bool _obscurePassword = true;
-
-  final List<Map<String, dynamic>> _defaultGovernorates = [
-    {'id': 1, 'name_ar': 'القاهرة'},
-    {'id': 2, 'name_ar': 'الجيزة'},
-    {'id': 3, 'name_ar': 'الإسكندرية'},
-    {'id': 4, 'name_ar': 'الدقهلية'},
-    {'id': 5, 'name_ar': 'الشرقية'},
-    {'id': 6, 'name_ar': 'الغربية'},
-    {'id': 7, 'name_ar': 'المنوفية'},
-    {'id': 8, 'name_ar': 'القليوبية'},
-    {'id': 9, 'name_ar': 'البحيرة'},
-  ];
+  final _formKey    = GlobalKey<FormState>();
+  final _nameCtrl   = TextEditingController();
+  final _emailCtrl  = TextEditingController();
+  final _phoneCtrl  = TextEditingController();
+  final _passCtrl   = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscure  = true;
+  bool _obscure2 = true;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleRegister() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final name = _nameController.text.trim();
-    final phone = _phoneController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    final success = await ref.read(authNotifierProvider.notifier).register(
-          name: name,
-          phone: phone.isNotEmpty ? phone : null,
-          email: email.isNotEmpty ? email : null,
-          governorateId: _selectedGovernorateId,
-          password: password,
-        );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم إنشاء الحساب بنجاح! مرحباً بك في دليل أي خدمة.'),
-          backgroundColor: AppColors.secondary,
-        ),
-      );
+    final notifier = ref.read(authNotifierProvider.notifier);
+    await notifier.register(
+      name:     _nameCtrl.text.trim(),
+      email:    _emailCtrl.text.trim(),
+      phone:    _phoneCtrl.text.trim(),
+      password: _passCtrl.text,
+    );
+    final state = ref.read(authNotifierProvider);
+    if (!mounted) return;
+    if (state.isAuthenticated) {
       context.go(AppRoutes.home);
+    } else if (state.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(state.errorMessage!),
+            backgroundColor: AppColors.error),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final isLoading = ref.watch(authNotifierProvider).isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.registerTitle),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 8),
-              const Text(
-                AppStrings.registerSubtitle,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
+      body: Stack(
+        children: [
+          Container(
+            height: 240,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF7C3AED), Color(0xFF2563EB)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 24),
-
-              // Full Name
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.fullName,
-                  hintText: 'مثال: محمد علي',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'يرجى كتابة الاسم الكامل';
-                  }
-                  if (value.trim().length < 3) {
-                    return 'الاسم يجب أن يتكون من 3 أحرف على الأقل';
-                  }
-                  return null;
-                },
+            ),
+          ),
+          Positioned(
+            top: -30,
+            right: -30,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
               ),
-              const SizedBox(height: 16),
-
-              // Phone Number
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.phone,
-                  hintText: 'مثال: 01012345678',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                ),
-                validator: (value) {
-                  if ((value == null || value.trim().isEmpty) && _emailController.text.trim().isEmpty) {
-                    return 'يرجى إدخال رقم الهاتف أو البريد الإلكتروني';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Email Address
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'البريد الإلكتروني (اختياري)',
-                  hintText: 'name@example.com',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Governorate Dropdown
-              DropdownButtonFormField<int>(
-                value: _selectedGovernorateId,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.governorate,
-                  prefixIcon: Icon(Icons.location_on_outlined),
-                ),
-                items: _defaultGovernorates.map((gov) {
-                  return DropdownMenuItem<int>(
-                    value: gov['id'] as int,
-                    child: Text(gov['name_ar'] as String),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _selectedGovernorateId = val;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Password
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: AppStrings.password,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: AppColors.textMuted,
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 40),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.white,
+                                size: 18),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text(
+                          'إنشاء حساب جديد',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
                   ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'يرجى إدخال كلمة المرور';
-                  }
-                  if (value.length < 6) {
-                    return 'كلمة المرور يجب ألا تقل عن 6 خانات';
-                  }
-                  return null;
-                },
-              ),
-
-              if (authState.errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorLight,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        'انضم وابدأ اكتشاف الخدمات حولك',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 28),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: AppColors.modalShadow,
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _GradientLabel(label: 'الاسم الكامل'),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _nameCtrl,
+                              decoration: _inputDeco(
+                                hint: 'محمد أحمد',
+                                icon: Icons.person_outline_rounded,
+                              ),
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'الاسم مطلوب'
+                                  : null,
+                            ),
+                            const SizedBox(height: 14),
+                            _GradientLabel(label: 'البريد الإلكتروني'),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _emailCtrl,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: _inputDeco(
+                                hint: 'example@email.com',
+                                icon: Icons.alternate_email_rounded,
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty)
+                                  return 'البريد مطلوب';
+                                if (!v.contains('@')) return 'بريد غير صالح';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                            _GradientLabel(label: 'رقم الهاتف'),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _phoneCtrl,
+                              keyboardType: TextInputType.phone,
+                              decoration: _inputDeco(
+                                hint: '01xxxxxxxxx',
+                                icon: Icons.phone_outlined,
+                              ),
+                              validator: (v) => (v == null || v.length < 10)
+                                  ? 'رقم هاتف غير صالح'
+                                  : null,
+                            ),
+                            const SizedBox(height: 14),
+                            _GradientLabel(label: 'كلمة المرور'),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _passCtrl,
+                              obscureText: _obscure,
+                              decoration: _inputDeco(
+                                hint: '••••••••',
+                                icon: Icons.lock_outline_rounded,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscure
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: AppColors.textMuted,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                              ),
+                              validator: (v) => (v == null || v.length < 6)
+                                  ? 'يجب أن تكون ٦ أحرف على الأقل'
+                                  : null,
+                            ),
+                            const SizedBox(height: 14),
+                            _GradientLabel(label: 'تأكيد كلمة المرور'),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _confirmCtrl,
+                              obscureText: _obscure2,
+                              decoration: _inputDeco(
+                                hint: '••••••••',
+                                icon: Icons.lock_outline_rounded,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscure2
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: AppColors.textMuted,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _obscure2 = !_obscure2),
+                                ),
+                              ),
+                              validator: (v) => v != _passCtrl.text
+                                  ? 'كلمات المرور غير متطابقة'
+                                  : null,
+                            ),
+                            const SizedBox(height: 24),
+                            _GradientButton(
+                              label: 'إنشاء الحساب',
+                              isLoading: isLoading,
+                              onTap: _submit,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          authState.errorMessage!,
-                          style: const TextStyle(color: AppColors.error, fontSize: 13),
+                      const Text(
+                        'لديك حساب بالفعل؟ ',
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 14),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: ShaderMask(
+                          shaderCallback: (b) =>
+                              AppColors.brandGradient.createShader(b),
+                          child: const Text(
+                            'تسجيل الدخول',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-
-              const SizedBox(height: 24),
-
-              ElevatedButton(
-                onPressed: authState.isLoading ? null : _handleRegister,
-                child: authState.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text(AppStrings.registerButton),
-              ),
-
-              const SizedBox(height: 16),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'لديك حساب بالفعل؟',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      context.pop();
-                    },
-                    child: const Text('تسجيل الدخول'),
-                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -1,464 +1,295 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:daleel_core/daleel_core.dart';
-import '../../../config/routes.dart';
-import '../../search/providers/search_provider.dart';
-import '../../favorites/presentation/widgets/favorite_button.dart';
-import '../providers/map_provider.dart';
-import 'widgets/osm_leaflet_map_view.dart';
 
-class MapScreen extends ConsumerStatefulWidget {
+class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
   @override
-  ConsumerState<MapScreen> createState() => _MapScreenState();
+  State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  int? _selectedCatId;
+class _MapScreenState extends State<MapScreen> {
+  String _selectedFilter = 'الكل';
+  static const _filters = ['الكل', 'محلات', 'حرف', 'خدمات', 'معلمين'];
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {}
-  }
-
-  void _onCategorySelected(int? catId) {
-    setState(() {
-      _selectedCatId = catId;
-    });
-    ref.read(mapNotifierProvider.notifier).loadMapItems(
-          query: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
-          categoryId: catId,
-        );
-  }
+  // Mock pins
+  static const _pins = [
+    _Pin('سوبر ماركت النجمة', 'محلات', 30.5965, 32.2715),
+    _Pin('كهربائي أبو علي', 'حرف', 30.5880, 32.2650),
+    _Pin('معلم رياضيات', 'معلمين', 30.6010, 32.2780),
+    _Pin('صيدلية السلام', 'خدمات', 30.5940, 32.2600),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final mapState = ref.watch(mapNotifierProvider);
-    final mapNotifier = ref.read(mapNotifierProvider.notifier);
-    final searchState = ref.watch(searchNotifierProvider);
-
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Full Screen OpenStreetMap Canvas
-          OsmLeafletMapView(
-            center: mapState.center,
-            zoom: mapState.zoom,
-            items: mapState.mapItems,
-            selectedItem: mapState.selectedItem,
-            userLocation: mapState.userLocation,
-            onItemTap: (item) {
-              mapNotifier.selectItem(item);
-            },
-            onCenterChanged: (point) {
-              mapNotifier.setCenter(point.latitude, point.longitude);
-            },
-            onZoomChanged: (newZoom) {
-              mapNotifier.setZoom(newZoom);
-            },
-          ),
-
-          // 2. Top Search & Category Filter Overlay
-          SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top Search Bar
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+          // ── Map placeholder ────────────────────────────────────────
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFE0E7FF), Color(0xFFEDE9FE)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (b) =>
+                        AppColors.brandGradient.createShader(b),
+                    child: const Icon(Icons.map_rounded,
+                        size: 80, color: Colors.white),
                   ),
-                  child: Row(
-                    children: [
-                      // Back Button
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-                        onPressed: () {
-                          if (Navigator.canPop(context)) {
-                            Navigator.pop(context);
-                          } else {
-                            context.go(AppRoutes.home);
-                          }
-                        },
+                  const SizedBox(height: 16),
+                  ShaderMask(
+                    shaderCallback: (b) =>
+                        AppColors.brandGradient.createShader(b),
+                    child: const Text(
+                      'خريطة الخدمات',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      // Search Input
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          textInputAction: TextInputAction.search,
-                          decoration: const InputDecoration(
-                            hintText: 'ابحث على الخريطة...',
-                            hintStyle: TextStyle(fontSize: 13, color: AppColors.textMuted),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          onSubmitted: (query) {
-                            mapNotifier.loadMapItems(
-                              query: query.trim().isEmpty ? null : query.trim(),
-                              categoryId: _selectedCatId,
-                            );
-                          },
-                        ),
-                      ),
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear, size: 18, color: AppColors.textMuted),
-                          onPressed: () {
-                            _searchController.clear();
-                            mapNotifier.loadMapItems(categoryId: _selectedCatId);
-                            setState(() {});
-                          },
-                        ),
-                      // Switch to List/Results Button
-                      Container(
-                        height: 28,
-                        width: 1,
-                        color: AppColors.border,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.list_alt, color: AppColors.primary),
-                        tooltip: 'عرض كقائمة',
-                        onPressed: () {
-                          context.push(AppRoutes.searchResults);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Category Filter Pills
-                if (searchState.categories.isNotEmpty)
-                  SizedBox(
-                    height: 38,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: searchState.categories.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          final isSelected = _selectedCatId == null;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: ChoiceChip(
-                              label: const Text('الكل'),
-                              selected: isSelected,
-                              selectedColor: AppColors.primary,
-                              backgroundColor: Colors.white,
-                              labelStyle: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                color: isSelected ? Colors.white : AppColors.textPrimary,
-                              ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              onSelected: (_) => _onCategorySelected(null),
-                            ),
-                          );
-                        }
-                        final cat = searchState.categories[index - 1];
-                        final isSelected = _selectedCatId == cat.id;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ChoiceChip(
-                            label: Text(cat.nameAr),
-                            selected: isSelected,
-                            selectedColor: AppColors.primary,
-                            backgroundColor: Colors.white,
-                            labelStyle: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? Colors.white : AppColors.textPrimary,
-                            ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            onSelected: (_) => _onCategorySelected(cat.id),
-                          ),
-                        );
-                      },
                     ),
                   ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'أضف google_maps_flutter للتفعيل الكامل',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
-          // 3. Loading Progress Indicator
-          if (mapState.isLoading)
-            Positioned(
-              top: 140,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
-                    ],
-                  ),
+          // ── Top bar ────────────────────────────────────────────────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1D4ED8), Color(0xFF6D28D9)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: AppColors.cardShadow,
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                      SizedBox(width: 8),
-                      Text('جارٍ تحديث الأنشطة على الخريطة...', style: TextStyle(fontSize: 12)),
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Colors.white,
+                              size: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'خريطة الخدمات',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
+          ),
 
-          // 4. Bottom Activity Preview Card (When a marker is selected)
-          if (mapState.selectedItem != null)
-            Positioned(
-              bottom: 42, // Above OpenStreetMap attribution
-              left: 16,
-              right: 16,
-              child: _buildSelectedActivityCard(mapState.selectedItem!, mapNotifier),
+          // ── Filter chips ───────────────────────────────────────────
+          Positioned(
+            top: 110,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _filters.length,
+                itemBuilder: (_, i) {
+                  final f = _filters[i];
+                  final sel = _selectedFilter == f;
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: GestureDetector(
+                      onTap: () =>
+                          setState(() => _selectedFilter = f),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient:
+                              sel ? AppColors.brandGradient : null,
+                          color: sel ? null : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: AppColors.cardShadow,
+                        ),
+                        child: Text(
+                          f,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: sel
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
+          ),
+
+          // ── Nearby list ────────────────────────────────────────────
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 200,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                      color: Color(0x1A000000),
+                      blurRadius: 20,
+                      offset: Offset(0, -4))
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.brandGradient,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'الأماكن القريبة',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _pins.length,
+                      itemBuilder: (_, i) => _MapPinCard(pin: _pins[i]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSelectedActivityCard(SearchResultItemModel item, MapNotifier mapNotifier) {
-    final activityModelEquivalent = ActivityModel(
-      id: item.targetActivityId,
-      nameAr: item.isProduct ? (item.parentActivityNameAr ?? item.title) : item.title,
-      categoryId: item.categoryId ?? 1,
-      categoryNameAr: item.categoryNameAr,
-      governorateId: item.governorateId ?? 1,
-      governorateNameAr: item.governorateNameAr,
-      cityNameAr: item.cityNameAr,
-      addressAr: item.addressAr,
-      coverUrl: item.coverImage,
-      ratingAvg: item.ratingAvg,
-      ratingCount: item.reviewsCount,
-      hasDelivery: item.hasDelivery,
-      phone: item.phone,
-      whatsapp: item.whatsappNumber,
-      latitude: item.latitude,
-      longitude: item.longitude,
-    );
+class _Pin {
+  final String name, category;
+  final double lat, lng;
+  const _Pin(this.name, this.category, this.lat, this.lng);
+}
 
+class _MapPinCard extends StatelessWidget {
+  final _Pin pin;
+  const _MapPinCard({required this.pin});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      width: 160,
+      margin: const EdgeInsets.only(left: 12, bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: AppColors.brandGradientSubtle,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.18),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: AppColors.brandGradient,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.place_rounded,
+                color: Colors.white, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            pin.name,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: AppColors.textPrimary),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            pin.category,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            context.push('/activity/${item.targetActivityId}');
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Row: Image, Info, Close & Favorite Button
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        item.coverImage ?? 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=200',
-                        width: 70,
-                        height: 70,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 70,
-                          height: 70,
-                          color: AppColors.primaryLight,
-                          child: const Icon(Icons.storefront, color: AppColors.primary, size: 30),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Title & Badges
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              FavoriteButton(activity: activityModelEquivalent),
-                              IconButton(
-                                icon: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => mapNotifier.selectItem(null),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-
-                          // Category & Location
-                          Row(
-                            children: [
-                              if (item.categoryNameAr != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryLight,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    item.categoryNameAr!,
-                                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppColors.primary),
-                                  ),
-                                ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  item.locationText,
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-
-                          // Rating & Reviews
-                          Row(
-                            children: [
-                              const Icon(Icons.star, size: 14, color: Colors.amber),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${item.ratingAvg}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
-                              Text(
-                                ' (${item.reviewsCount} تقييم)',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                              ),
-                              if (item.hasDelivery) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text('توصيل', style: TextStyle(fontSize: 9.5, color: Colors.green, fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-                const Divider(height: 1),
-                const SizedBox(height: 10),
-
-                // Bottom Action Buttons
-                Row(
-                  children: [
-                    // View Details Button
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          context.push('/activity/${item.targetActivityId}');
-                        },
-                        icon: const Icon(Icons.visibility_outlined, size: 16),
-                        label: const Text('عرض التفاصيل الكاملة', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Call Button
-                    if (item.phone != null && item.phone!.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.phone, color: AppColors.primary, size: 20),
-                        tooltip: 'اتصال',
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () => _launchUrl('tel:${item.phone}'),
-                      ),
-
-                    // WhatsApp Button
-                    if (item.whatsappNumber != null && item.whatsappNumber!.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      IconButton(
-                        icon: const Icon(Icons.chat, color: Colors.green, size: 20),
-                        tooltip: 'واتساب',
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.green.shade50,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () {
-                          final num = item.whatsappNumber!.replaceAll(RegExp(r'[^0-9]'), '');
-                          _launchUrl('https://wa.me/$num');
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

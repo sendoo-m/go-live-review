@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:daleel_core/daleel_core.dart';
-import '../../../config/routes.dart';
-import '../providers/search_provider.dart';
+import '../../favorites/presentation/widgets/favorite_button.dart';
+
+final _searchQueryProvider = StateProvider<String>((ref) => '');
+final _selectedCatProvider = StateProvider<String?>((ref) => null);
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -13,569 +15,397 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  late final TextEditingController _searchController;
-  final FocusNode _focusNode = FocusNode();
-  bool _fieldFocused = false;
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    final currentQuery = ref.read(searchNotifierProvider).params.query;
-    _searchController = TextEditingController(text: currentQuery);
-    _focusNode.addListener(() {
-      setState(() => _fieldFocused = _focusNode.hasFocus);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focus.requestFocus();
     });
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
-    _focusNode.dispose();
+    _ctrl.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  void _onSearchSubmit(String query) {
-    if (query.trim().isEmpty) return;
-    ref.read(searchNotifierProvider.notifier).executeSearch(overrideQuery: query.trim());
-    context.push(AppRoutes.searchResults);
-  }
+  static const _categories = [
+    'الكل', 'محلات', 'حرف', 'خدمات', 'معلمين', 'بلوجرز',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final searchState    = ref.watch(searchNotifierProvider);
-    final searchNotifier = ref.read(searchNotifierProvider.notifier);
+    final query    = ref.watch(_searchQueryProvider);
+    final selCat   = ref.watch(_selectedCatProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        titleSpacing: 0,
-        title: Semantics(
-          label: 'حقل البحث',
-          textField: true,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            height: 46,
-            margin: const EdgeInsets.only(left: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _fieldFocused ? AppColors.primary : AppColors.border,
-                width: _fieldFocused ? 1.5 : 1.0,
+      body: Column(
+        children: [
+          // ── Header ──────────────────────────────────────────────────
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1D4ED8), Color(0xFF6D28D9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              boxShadow: _fieldFocused
-                  ? [
-                      BoxShadow(
-                        color: AppColors.glowBlue,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      )
-                    ]
-                  : [],
             ),
-            child: TextField(
-              controller: _searchController,
-              focusNode: _focusNode,
-              autofocus: searchState.params.query.isEmpty,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'ابحث عن محل، خدمة، منتج أو تصنيف...',
-                hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                prefixIcon: ShaderMask(
-                  shaderCallback: (b) => AppColors.brandGradient.createShader(b),
-                  child: const Icon(Icons.search, color: Colors.white, size: 22),
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18, color: AppColors.textMuted),
-                        onPressed: () {
-                          _searchController.clear();
-                          searchNotifier.onQueryChanged('');
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-              onChanged: (val) {
-                setState(() {});
-                searchNotifier.onQueryChanged(val);
-              },
-              onSubmitted: _onSearchSubmit,
-            ),
-          ),
-        ),
-        actions: [
-          Semantics(
-            label: 'عرض على الخريطة',
-            button: true,
-            child: IconButton(
-              icon: ShaderMask(
-                shaderCallback: (b) => AppColors.brandGradient.createShader(b),
-                child: const Icon(Icons.map_outlined, color: Colors.white),
-              ),
-              tooltip: 'عرض على الخريطة',
-              onPressed: () => context.push(AppRoutes.map),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── 1. Type Switcher ──────────────────────────────────────
-            _buildTypeFilterRow(searchState, searchNotifier),
-            const SizedBox(height: 16),
-
-            // ── 2. Governorate Quick Bar ──────────────────────────────
-            if (searchState.governorates.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4, height: 18,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.brandGradient,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'المحافظة والمنطقة',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 38,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: searchState.governorates.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      final sel = searchState.params.governorateId == null;
-                      return _BrandChip(
-                        label: 'كافة المحافظات',
-                        selected: sel,
-                        onTap: () => searchNotifier.setGovernorate(null),
-                      );
-                    }
-                    final gov = searchState.governorates[index - 1];
-                    final sel = searchState.params.governorateId == gov.id;
-                    return _BrandChip(
-                      label: gov.nameAr,
-                      selected: sel,
-                      onTap: () => searchNotifier.setGovernorate(gov.id),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // ── 3. Recent Searches ────────────────────────────────────
-            if (searchState.recentSearches.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
                   children: [
                     Row(
                       children: [
-                        Container(
-                          width: 4, height: 18,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.brandGradient,
-                            borderRadius: BorderRadius.circular(2),
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.white,
+                                size: 18),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'عمليات البحث الأخيرة',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: AppColors.textPrimary),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color:
+                                      Colors.white.withValues(alpha: 0.3)),
+                            ),
+                            child: TextField(
+                              controller: _ctrl,
+                              focusNode: _focus,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                hintText: 'ابحث عن متجر أو خدمة...',
+                                hintStyle: TextStyle(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 13),
+                                prefixIcon: const Icon(
+                                    Icons.search_rounded,
+                                    color: Colors.white,
+                                    size: 20),
+                                suffixIcon: query.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(
+                                            Icons.clear_rounded,
+                                            color: Colors.white,
+                                            size: 18),
+                                        onPressed: () {
+                                          _ctrl.clear();
+                                          ref
+                                              .read(_searchQueryProvider
+                                                  .notifier)
+                                              .state = '';
+                                        },
+                                      )
+                                    : null,
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 13),
+                              ),
+                              onChanged: (v) {
+                                ref
+                                    .read(_searchQueryProvider.notifier)
+                                    .state = v;
+                              },
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    TextButton(
-                      onPressed: () => searchNotifier.clearRecentSearches(),
-                      child: const Text('مسح السجل',
-                          style: TextStyle(
-                              fontSize: 12, color: AppColors.textMuted)),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: searchState.recentSearches.map((term) {
-                    return Semantics(
-                      label: 'بحث سابق: $term',
-                      button: true,
-                      child: ActionChip(
-                        avatar: const Icon(Icons.history,
-                            size: 16, color: AppColors.textMuted),
-                        label: Text(term),
-                        onPressed: () {
-                          _searchController.text = term;
-                          _onSearchSubmit(term);
-                        },
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // ── 4. Categories Grid ────────────────────────────────────
-            if (searchState.categories.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4, height: 18,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.brandGradient,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'تصفح حسب التصنيف',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 2.6,
-                  ),
-                  itemCount: searchState.categories.length,
-                  itemBuilder: (context, index) {
-                    final cat = searchState.categories[index];
-                    final isSelected =
-                        searchState.params.categoryId == cat.id;
-                    return Semantics(
-                      label: cat.nameAr,
-                      selected: isSelected,
-                      button: true,
-                      child: InkWell(
-                        onTap: () {
-                          searchNotifier
-                              .setCategory(isSelected ? null : cat.id);
-                          context.push(AppRoutes.searchResults);
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        splashColor: AppColors.primaryLight,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? AppColors.brandGradientSubtle
-                                : null,
-                            color: isSelected ? null : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.border,
-                              width: isSelected ? 1.5 : 1,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.glowBlue,
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    )
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
+                    const SizedBox(height: 12),
+                    // Category chips
+                    SizedBox(
+                      height: 34,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _categories.length,
+                        itemBuilder: (_, i) {
+                          final cat = _categories[i];
+                          final sel = (i == 0 && selCat == null) ||
+                              selCat == cat;
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(left: 8),
+                            child: GestureDetector(
+                              onTap: () {
+                                ref
+                                    .read(_selectedCatProvider.notifier)
+                                    .state = i == 0 ? null : cat;
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  gradient: isSelected
+                                  gradient: sel
                                       ? AppColors.brandGradient
                                       : null,
-                                  color: isSelected
+                                  color: sel
                                       ? null
-                                      : AppColors.primaryLight,
-                                  shape: BoxShape.circle,
+                                      : Colors.white
+                                          .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: sel
+                                      ? null
+                                      : Border.all(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.3)),
                                 ),
-                                child: Icon(
-                                  _getCategoryIcon(cat.icon),
-                                  size: 16,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
                                 child: Text(
-                                  cat.nameAr,
-                                  style: TextStyle(
+                                  cat,
+                                  style: const TextStyle(
+                                    color: Colors.white,
                                     fontSize: 12,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                    color: isSelected
-                                        ? AppColors.primaryDark
-                                        : AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            // ── 5. Search Button ──────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Semantics(
-                label: 'عرض كافة نتائج البحث',
-                button: true,
-                child: GestureDetector(
-                  onTap: () => _onSearchSubmit(_searchController.text),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration:
-                        AppColors.brandBoxDecorationRounded(radius: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.search, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'عرض كافة نتائج البحث',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
+                  ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Type Filter Row ──────────────────────────────────────────────────
-  Widget _buildTypeFilterRow(SearchState state, SearchNotifier notifier) {
-    final types = [
-      {'key': 'all',     'label': 'الكل',              'icon': Icons.apps},
-      {'key': 'shop',    'label': 'المتاجر والمحلات',   'icon': Icons.storefront},
-      {'key': 'service', 'label': 'الخدمات والصيانة',  'icon': Icons.build_outlined},
-      {'key': 'product', 'label': 'المنتجات والأسعار', 'icon': Icons.inventory_2_outlined},
-    ];
-    final currentType = state.params.type ?? 'all';
-    return SizedBox(
-      height: 42,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: types.length,
-        itemBuilder: (context, index) {
-          final t = types[index];
-          final isSelected = currentType == t['key'];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Semantics(
-              label: t['label'] as String,
-              selected: isSelected,
-              button: true,
-              child: GestureDetector(
-                onTap: () => notifier.setType(t['key'] as String),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: isSelected ? AppColors.brandGradient : null,
-                    color: isSelected ? null : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? Colors.transparent
-                          : AppColors.border,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.glowPurple,
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            )
-                          ]
-                        : [],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        t['icon'] as IconData,
-                        size: 15,
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        t['label'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(String? iconName) {
-    switch (iconName?.toLowerCase()) {
-      case 'utensils':
-      case 'restaurant':
-        return Icons.restaurant;
-      case 'heart-pulse':
-      case 'hospital':
-        return Icons.local_hospital_outlined;
-      case 'car':
-        return Icons.directions_car_outlined;
-      case 'laptop':
-      case 'smartphone':
-        return Icons.devices_outlined;
-      case 'wrench':
-      case 'hammer':
-        return Icons.handyman_outlined;
-      case 'shopping-bag':
-      case 'store':
-        return Icons.shopping_bag_outlined;
-      default:
-        return Icons.category_outlined;
-    }
-  }
-}
-
-// ── Brand Chip ─────────────────────────────────────────────────────────
-class _BrandChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _BrandChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Semantics(
-        label: label,
-        selected: selected,
-        button: true,
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: selected ? AppColors.brandGradient : null,
-              color: selected ? null : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color:
-                    selected ? Colors.transparent : AppColors.border,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.glowPurple,
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      )
-                    ]
-                  : [],
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.bold : FontWeight.w500,
-                color: selected
-                    ? Colors.white
-                    : AppColors.textSecondary,
               ),
             ),
           ),
+
+          // ── Results ─────────────────────────────────────────────────
+          Expanded(
+            child: query.isEmpty
+                ? _SearchSuggestions()
+                : _SearchResults(query: query, category: selCat),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchSuggestions extends StatelessWidget {
+  static const _recent = [
+    'سباك في الإسماعيلية',
+    'محل ملابس',
+    'معلم رياضيات',
+    'كهربائي منازل',
+  ];
+
+  static const _popular = [
+    'صيانة', 'تسليك', 'دروس خصوصية',
+    'تصوير', 'ديكور', 'سباكة',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        // Recent
+        Row(
+          children: [
+            ShaderMask(
+              shaderCallback: (b) => AppColors.brandGradient.createShader(b),
+              child: const Icon(Icons.history_rounded,
+                  color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 8),
+            const Text('عمليات البحث الأخيرة',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          ],
         ),
+        const SizedBox(height: 12),
+        ..._recent.map((r) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: ShaderMask(
+                shaderCallback: (b) =>
+                    AppColors.brandGradient.createShader(b),
+                child: const Icon(Icons.search_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              title: Text(r,
+                  style: const TextStyle(
+                      fontSize: 14, color: AppColors.textPrimary)),
+              trailing: const Icon(Icons.north_west_rounded,
+                  size: 16, color: AppColors.textMuted),
+            )),
+        const SizedBox(height: 20),
+        const Divider(color: AppColors.border),
+        const SizedBox(height: 16),
+        // Popular
+        Row(
+          children: [
+            ShaderMask(
+              shaderCallback: (b) => AppColors.brandGradient.createShader(b),
+              child: const Icon(Icons.local_fire_department_rounded,
+                  color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 8),
+            const Text('الأكثر بحثاً',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _popular
+              .map((p) => GestureDetector(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.brandGradientSubtle,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Text(
+                        p,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ))
+              .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchResults extends ConsumerWidget {
+  final String query;
+  final String? category;
+  const _SearchResults({required this.query, this.category});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Mock results — replace with actual provider
+    final results = List.generate(
+      5,
+      (i) => _MockResult(
+        name: '$query — نتيجة ${i + 1}',
+        cat: category ?? 'خدمات',
+        gov: 'الإسماعيلية',
+        rating: 4.2 + i * 0.1,
+      ),
+    );
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: results.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => _ResultTile(result: results[i]),
+    );
+  }
+}
+
+class _MockResult {
+  final String name, cat, gov;
+  final double rating;
+  const _MockResult(
+      {required this.name,
+      required this.cat,
+      required this.gov,
+      required this.rating});
+}
+
+class _ResultTile extends StatelessWidget {
+  final _MockResult result;
+  const _ResultTile({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              gradient: AppColors.brandGradient,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(Icons.storefront_rounded,
+                color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(result.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 3),
+                Text(
+                  '${result.cat} · ${result.gov}',
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              gradient: AppColors.brandGradient,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star_rounded,
+                    size: 12, color: Colors.white),
+                const SizedBox(width: 3),
+                Text(
+                  result.rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
